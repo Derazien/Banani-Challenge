@@ -1,0 +1,41 @@
+.homeContainer {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.promptContainer {
+  padding: 12px;
+  margin-bottom: 80px;
+}
+
+.tableContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* Desktop layout */
+@media (min-width: 768px) {
+  .homeContainer {
+    flex-direction: row;
+    padding: 0;
+    position: relative;
+  }
+
+  .promptContainer {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 280px;
+    margin-bottom: 0;
+  }
+
+  .tableContainer {
+    width: 100%;
+    padding-top: 360px;
+  }
+} 

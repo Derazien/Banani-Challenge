@@ -1,0 +1,238 @@
+.tableWrapper {
+  display: flex;
+  flex-direction: column;
+  width: 50%;
+}
+
+.tableContainer {
+  width: 100%;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0px 16px 28px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+
+.tableTitle {
+  width: 100%;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+  color: #A6A6A6;
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Remove all row-based borders */
+.tableRow {
+  height: 56px;
+  position: relative;
+  border-bottom: none;
+}
+
+/* Use table cell borders instead for more consistent rendering */
+.tableCell {
+  padding: 16px 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 24px;
+  color: #000000;
+  text-align: left;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Remove border from last row cells */
+tr:last-child .tableCell {
+  border-bottom: none;
+}
+
+.firstTableCell {
+  width: 220px;
+}
+
+.tableCell:first-child {
+  padding-left: 24px;
+}
+
+.tableCell:last-child {
+  padding-right: 24px;
+}
+
+.tableCell + .tableCell {
+  padding-left: 8px;
+}
+
+.tableCellWithIcon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tableCellActions {
+  text-align: right;
+  position: relative;
+}
+
+.tableIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: #1C1B1F;
+}
+
+.tableActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.tableActionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 8px;
+  margin: -4px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.tableActionButton:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  transform: scale(1.05);
+}
+
+.tableActionButton:active {
+  transform: scale(0.95);
+}
+
+.tableActionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.tableActionButton:disabled:hover {
+  background-color: transparent;
+}
+
+.tableActionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: #1C1B1F;
+}
+
+.tableEmptyRow {
+  opacity: 0.5;
+}
+
+.actionMessage {
+  position: absolute;
+  right: 24px;
+  top: -24px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  z-index: 10;
+  white-space: nowrap;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.tableHeader {
+  padding: 16px 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 24px;
+  color: #1C1B1F;
+  text-align: left;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.tableHeader:first-child {
+  padding-left: 24px;
+}
+
+.tableHeader:last-child {
+  padding-right: 24px;
+  text-align: right;
+}
+
+.tableLoading, .tableError {
+  padding: 24px;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  color: #888788;
+}
+
+.tableError {
+  color: #B00020;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.editing-row {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.editing-row:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.fadeOut {
+  opacity: 0;
+  transform: translateX(30px);
+  transition: all 0.3s ease-out;
+}
+
+.tooltip {
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  z-index: 100;
+  white-space: nowrap;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.2s ease-in-out;
+  pointer-events: none;
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+} 
