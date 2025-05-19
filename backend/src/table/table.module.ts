@@ -1,21 +1,26 @@
 import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
 import { TableController } from './table.controller';
 import { TableService } from './table.service';
-import { ActionHandler, ActionHandlerSchema } from './schemas/action-handler.schema';
+import { ActionHandler } from './entities/action-handler.entity';
 import { ActionHandlerService } from './services/action-handler.service';
 import { ActionHandlerController } from './controllers/action-handler.controller';
+import { DatabaseSeederService } from './services/database-seeder.service';
+import { VersionControlUtil } from './utils/version-control';
 
 @Module({
   imports: [
     ConfigModule,
-    MongooseModule.forFeature([
-      { name: ActionHandler.name, schema: ActionHandlerSchema }
-    ])
+    TypeOrmModule.forFeature([ActionHandler])
   ],
   controllers: [TableController, ActionHandlerController],
-  providers: [TableService, ActionHandlerService],
+  providers: [
+    TableService, 
+    ActionHandlerService, 
+    DatabaseSeederService,
+    VersionControlUtil
+  ],
   exports: [TableService, ActionHandlerService]
 })
 export class TableModule {} 

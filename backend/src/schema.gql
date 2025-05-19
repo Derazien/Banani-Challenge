@@ -1,0 +1,62 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+input ActionHandlerInput {
+  code: String
+  description: String
+  enabled: Boolean! = true
+  encryptCode: Boolean = true
+  frontendVersion: String
+  icon: String
+  name: String!
+  settings: ActionHandlerSettingsInput
+  type: String!
+  version: String!
+}
+
+type ActionHandlerSettings {
+  confirmBeforeDelete: Boolean
+  notifyOnSave: Boolean
+  openInModal: String
+  validateOnEdit: Boolean
+}
+
+input ActionHandlerSettingsInput {
+  confirmBeforeDelete: Boolean
+  notifyOnSave: Boolean
+  openInModal: Boolean
+  validateOnEdit: Boolean
+}
+
+type ActionHandlerType {
+  code: String
+  createdAt: DateTime!
+  description: String
+  enabled: Boolean!
+  frontendVersion: String
+  icon: String
+  id: ID!
+  name: String!
+  settings: ActionHandlerSettings
+  type: String!
+  updatedAt: DateTime!
+  version: String!
+}
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type Mutation {
+  createActionHandler(input: ActionHandlerInput!): ActionHandlerType!
+  createHandlerVersion(changeType: String! = "patch", input: ActionHandlerInput!, type: String!): ActionHandlerType!
+  removeActionHandler(type: String!, version: String!): Boolean!
+  updateActionHandler(input: ActionHandlerInput!, type: String!, version: String!): ActionHandlerType!
+}
+
+type Query {
+  actionHandler(type: String!, version: String): ActionHandlerType!
+  actionHandlers(type: String): [ActionHandlerType!]!
+}
