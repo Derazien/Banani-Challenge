@@ -1,331 +1,755 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence, useDragControls } from 'framer-motion';
 import { getIcon } from '@/components/icon-registry';
 import styles from './table.module.css';
 import { TableData } from '@/types/table';
 import { ActionRegistry } from '@/lib/actions/registry';
 import { ActionContext } from '@/lib/actions/types';
 import { SaveHandler } from '@/lib/actions/handlers/save-handler';
+import { ExportHandler } from '@/lib/actions/handlers/export-handler';
+import { AnimatedTableRow } from '@/components/ui/animated-table-row';
+import { useAutoAnimate } from '@formkit/auto-animate/react';
+import { Expand, Minimize2, GripVertical, Download, Trash2 } from 'lucide-react';
+import { useBoundedDrag } from '@/lib/hooks/use-bounded-drag';
+import { Position, DraggableProps } from '@/types/draggable';
+import { TableStorageManager } from '@/lib/storage/table-storage-manager';
+import { exportTableToXLSX } from '@/lib/utils/xlsx-export';
+import { ExpandedTablesState } from '@/types/table-manager';
 
-interface TableProps {
+interface TableProps extends DraggableProps {
   tableData: TableData | null;
   loading: boolean;
   error: string | null;
   title?: React.ReactNode;
   actionContext?: ActionContext;
   onDataUpdate?: (newData: TableData) => void;
+  isInitiallyCollapsed?: boolean;
+  onExpand?: () => void;
+  onCollapse?: () => void;
+  snapToGrid?: boolean;
+  gridPosition?: Position;
+  isGridItem?: boolean;
+  dragHandleClassName?: string;
+  singleTableMode?: boolean;
+  fixedWidth?: number;
+  onDragEnd?: (position: Position) => void;
+  isActive?: boolean;
+  onDelete?: () => void;
+  isCreateNew?: boolean;
+  onClick?: () => void;
 }
 
 export function Table({ 
   tableData: initialTableData, 
-  loading, 
-  error, 
-  title, 
+  loading: propsLoading, 
+  error: propsError, 
+  title: propsTitle, 
   actionContext,
-  onDataUpdate 
+  onDataUpdate,
+  collapsible = true,
+  initialPosition,
+  zIndex = 900,
+  onPositionChange,
+  isInitiallyCollapsed = false,
+  onExpand,
+  onCollapse,
+  snapToGrid = false,
+  gridPosition,
+  isGridItem = false,
+  dragHandleClassName,
+  singleTableMode,
+  fixedWidth,
+  onDragEnd,
+  isActive = false,
+  onDelete,
+  isCreateNew = false,
+  onClick
 }: TableProps) {
-  const [tableData, setTableData] = useState<TableData | null>(initialTableData);
-  const [actionMessages, setActionMessages] = useState<Record<string, string>>({});
-  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  // State initialization
+  const [isCollapsed, setIsCollapsed] = useState(isInitiallyCollapsed);
+  const [position, setPosition] = useState<Position>(initialPosition || { x: 20, y: 20 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isGridDragging, setIsGridDragging] = useState(false);
   const [savedItems, setSavedItems] = useState<Record<string, boolean>>({});
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const [actionMessages, setActionMessages] = useState<Record<string, string>>({});
+  const [activeTooltip, setActiveTooltip] = useState<{ id: string, text: string, x: number, y: number } | null>(null);
+  const [mounted, setMounted] = useState(false);
+  
+  // Refs and hooks
+  const tableRef = useRef<HTMLDivElement>(null);
+  const startPositionRef = useRef<Position | null>(null);
+  const [animationParent] = useAutoAnimate();
   const actionRegistry = ActionRegistry.getInstance();
+  const dragControls = useDragControls();
   
-  // Update local tableData when initialTableData changes
+  // Track mounting for client-side only effects
   useEffect(() => {
-    setTableData(initialTableData);
-  }, [initialTableData]);
+    setMounted(true);
+  }, []);
+
+  // Convert numeric positions to string px values for consistent server/client rendering
+  const getInitialPositionStyle = () => {
+    const x = initialPosition?.x || 20;
+    const y = initialPosition?.y || 120;
+    return {
+      left: isGridItem ? 'auto' : `${x}px`,
+      top: isGridItem ? 'auto' : `${y}px`,
+    };
+  };
   
-  // Initialize the registry with needed handlers and load saved items
+  // Simple toggle function with callbacks
+  const toggleCollapse = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    const newCollapsedState = !isCollapsed;
+    setIsCollapsed(newCollapsedState);
+    
+    // Call the appropriate callback
+    if (newCollapsedState && onCollapse) {
+      onCollapse();
+    } else if (!newCollapsedState && onExpand) {
+      onExpand();
+    }
+  };
+  
+  // Bound the drag to the window with minimal dependencies
+  const { position: dragPosition, setPosition: setDragPosition, dragConstraints, handleDragEnd } = useBoundedDrag(tableRef, {
+    initialPosition,
+    isCollapsed,
+    edgeMargin: 8
+  });
+  
+  // Update position when initialPosition changes
+  useEffect(() => {
+    if (initialPosition) {
+      setDragPosition(initialPosition);
+    }
+  }, [initialPosition, setDragPosition]);
+  
+  // Update position when grid position changes and we're using grid positioning
+  useEffect(() => {
+    if (snapToGrid && gridPosition && !isCollapsed) {
+      setDragPosition(gridPosition);
+    }
+  }, [gridPosition, snapToGrid, isCollapsed, setDragPosition]);
+
+  // Notify parent of position changes if callback provided
+  useEffect(() => {
+    if (onPositionChange) {
+      onPositionChange(dragPosition);
+    }
+  }, [dragPosition, onPositionChange]);
+
+  // Title display handling
+  const resolvedTitle = propsTitle || initialTableData?.title || 'Table';
+  
+  // Load saved items on component mount
   useEffect(() => {
     const registry = ActionRegistry.getInstance();
-    
-    // Load existing saved state if a SaveHandler is registered
     const saveHandler = registry.getHandler('save') as SaveHandler | undefined;
     if (saveHandler) {
       try {
-        const items = saveHandler.getSavedItems();
-        const savedState: Record<string, boolean> = {};
-        
-        items.forEach(item => {
-          if (item && item.id) {
-            savedState[item.id] = true;
-          }
-        });
-        
-        setSavedItems(savedState);
+        // Safely check if the method exists before calling it
+        if (typeof saveHandler.getSavedItems === 'function') {
+          const items = saveHandler.getSavedItems();
+          const savedState: Record<string, boolean> = {};
+          items.forEach(item => {
+            if (item && item.id) savedState[item.id] = true;
+          });
+          setSavedItems(savedState);
+        } else {
+          // Fallback - initialize with empty state
+          setSavedItems({});
+        }
       } catch (error) {
         console.error('Error loading saved items:', error);
+        setSavedItems({});
       }
     }
   }, []);
 
-  if (loading) return <TableLoading title={title} />;
-  if (error) return <TableError error={error} title={title} />;
-  if (!tableData?.rows?.length) return <TableEmptyState title={title} />;
-
-  // Handle item update (for edit handler)
   const handleItemUpdate = (updatedItem: any) => {
-    if (!tableData || !updatedItem || !updatedItem.id) return;
+    if (!initialTableData || !updatedItem || !updatedItem.id) return;
     
-    // Create a new copy of the rows with the updated item
-    const updatedRows = tableData.rows.map(row => 
-      row.id === updatedItem.id ? {...row, ...updatedItem} : row
-    );
-    
-    const updatedTableData = {
-      ...tableData,
-      rows: updatedRows
-    };
-    
-    // Update local state
-    setTableData(updatedTableData);
-    
-    // Call parent callback if provided
+    // Instead of updating local state, notify the parent component
     if (onDataUpdate) {
+      // Create new rows array with the updated item
+      const updatedRows = initialTableData.rows.map(row => 
+        row.id === updatedItem.id ? {...row, ...updatedItem} : row
+      );
+      
+      // Create a new table data object
+      const updatedTableData = { 
+        ...initialTableData, 
+        rows: updatedRows 
+      };
+      
+      // Notify parent
       onDataUpdate(updatedTableData);
     }
   };
   
-  // Handle item removal (for delete handler)
   const handleItemRemove = (itemId: string) => {
-    if (!tableData || !itemId) return;
+    if (!initialTableData || !itemId) return;
     
-    // Create a new copy of the rows without the deleted item
-    const filteredRows = tableData.rows.filter(row => row.id !== itemId);
-    
-    const updatedTableData = {
-      ...tableData,
-      rows: filteredRows
-    };
-    
-    // Update local state
-    setTableData(updatedTableData);
-    
-    // Call parent callback if provided
+    // Instead of updating local state, notify the parent component
     if (onDataUpdate) {
+      // Filter out the removed item
+      const filteredRows = initialTableData.rows.filter(row => row.id !== itemId);
+      
+      // Create a new table data object
+      const updatedTableData = { 
+        ...initialTableData, 
+        rows: filteredRows 
+      };
+      
+      // Notify parent
       onDataUpdate(updatedTableData);
     }
   };
 
-  // Handle action button click
-  const handleAction = async (actionType: string, rowData: any) => {
-    if (actionLoading[`${rowData.id}-${actionType}`]) {
-      return; // Prevent multiple clicks while action is processing
+  const handleAction = async (actionType: string, item: any) => {
+    // Focus on core actions
+    if (!['edit', 'view', 'delete'].includes(actionType)) {
+      console.warn(`Action ${actionType} not prioritized in this version. Using only edit, view, and delete.`);
     }
     
-    // Set loading state for this action
-    setActionLoading(prev => ({
-      ...prev,
-      [`${rowData.id}-${actionType}`]: true
-    }));
+    const handler = actionRegistry.getHandler(actionType);
+    if (!handler) {
+      console.error(`No handler registered for action type: ${actionType}`);
+      
+      // Display an error message directly
+      setActionMessages(prev => ({ 
+        ...prev, 
+        [item.id]: `Error: Action ${actionType} not available` 
+      }));
+      setTimeout(() => setActionMessages(prev => { 
+        const newState = {...prev}; 
+        delete newState[item.id]; 
+        return newState; 
+      }), 3000);
+      
+      return;
+    }
+    
+    // Set action as loading
+    setActionLoading(prev => ({ ...prev, [`${item.id}-${actionType}`]: true }));
     
     try {
-      // Execute the action using our registry with enhanced context
-      const result = await actionRegistry.executeAction(actionType, rowData, {
+      // Create a context with row-specific handlers
+      const rowContext = {
         ...actionContext,
-        tableTitle: tableData?.title,
-        tableData,
-        updateData: handleItemUpdate,
-        removeItem: handleItemRemove
-      });
+        // These functions let the handlers update/remove rows
+        updateData: (updatedData: any) => handleItemUpdate(updatedData),
+        removeItem: (itemId: string) => handleItemRemove(itemId)
+      };
       
-      // Store message for this row if provided
-      if (result.message) {
-        setActionMessages(prev => ({
-          ...prev,
-          [rowData.id]: result.message
-        }));
-        
-        // Clear message after 3 seconds
-        setTimeout(() => {
-          setActionMessages(prev => {
-            const newState = { ...prev };
-            delete newState[rowData.id];
-            return newState;
-          });
-        }, 3000);
+      // Execute the handler
+      const result = await handler.execute(item, rowContext);
+      
+      if (result.success) {
+        // Handle specific action success cases
+        switch(actionType) {
+          case 'delete':
+            // Row is already removed by the handler via removeItem callback
+            break;
+            
+          case 'edit':
+            // Row is already updated by the handler via updateData callback
+            if (result.message) {
+              setActionMessages(prev => ({ ...prev, [item.id]: result.message! }));
+              setTimeout(() => setActionMessages(prev => { 
+                const newState = {...prev}; 
+                delete newState[item.id]; 
+                return newState; 
+              }), 3000);
+            }
+            break;
+            
+          case 'view':
+            // Just show success message
+            if (result.message) {
+              setActionMessages(prev => ({ ...prev, [item.id]: result.message! }));
+              setTimeout(() => setActionMessages(prev => { 
+                const newState = {...prev}; 
+                delete newState[item.id]; 
+                return newState; 
+              }), 3000);
+            }
+            break;
+            
+          case 'save':
+            // Toggle saved state
+            setSavedItems(prev => ({ ...prev, [item.id]: !prev[item.id] }));
+            break;
+            
+          default:
+            // Generic handling for other actions
+            if (result.data) handleItemUpdate(result.data);
+            if (result.message) {
+              setActionMessages(prev => ({ ...prev, [item.id]: result.message! }));
+              setTimeout(() => setActionMessages(prev => { 
+                const newState = {...prev}; 
+                delete newState[item.id]; 
+                return newState; 
+              }), 3000);
+            }
+        }
+      } else {
+        // Handle failure
+        const errorMessage = result.error || "Action failed";
+        setActionMessages(prev => ({ ...prev, [item.id]: `Error: ${errorMessage}` }));
+        setTimeout(() => setActionMessages(prev => { 
+          const newState = {...prev}; 
+          delete newState[item.id]; 
+          return newState; 
+        }), 3000);
+        console.error(`Action ${actionType} failed:`, errorMessage);
       }
-      
-      // If this is a save action, update the saved state
-      if (actionType === 'save' && result.success) {
-        setSavedItems(prev => {
-          const newState = { ...prev };
-          if (result.data?.isSaved) {
-            newState[rowData.id] = true;
-          } else {
-            delete newState[rowData.id];
-          }
-          return newState;
-        });
-      }
-      
-      // If action was not successful, you might want to show an error toast or modal
-      if (!result.success && !result.data?.cancelled) {
-        console.error(`Action ${actionType} failed:`, result.message);
-      }
-      
-      return result;
     } catch (error) {
+      // Handle exceptions
       console.error(`Error executing action ${actionType}:`, error);
-      
-      // Show error message
-      setActionMessages(prev => ({
-        ...prev,
-        [rowData.id]: `Error: ${error instanceof Error ? error.message : 'Action failed'}`
-      }));
-      
-      setTimeout(() => {
-        setActionMessages(prev => {
-          const newState = { ...prev };
-          delete newState[rowData.id];
-          return newState;
-        });
-      }, 3000);
-      
-      return { success: false, message: 'Action failed due to an error' };
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setActionMessages(prev => ({ ...prev, [item.id]: `Error: ${errorMessage}` }));
+      setTimeout(() => setActionMessages(prev => { 
+        const newState = {...prev}; 
+        delete newState[item.id]; 
+        return newState; 
+      }), 3000);
     } finally {
-      // Clear loading state
-      setActionLoading(prev => {
-        const newState = { ...prev };
-        delete newState[`${rowData.id}-${actionType}`];
-        return newState;
+      // Always clear the loading state
+      setActionLoading(prev => { 
+        const newState = {...prev}; 
+        delete newState[`${item.id}-${actionType}`]; 
+        return newState; 
       });
     }
   };
-
-  // Get the icon to use for an action based on its current state
-  const getActionIcon = (action: { type: string; icon?: string }, rowId: string) => {
-    // Show loading indicator if the action is in progress
-    if (actionLoading[`${rowId}-${action.type}`]) {
-      return getIcon('hourglass');
+  
+  const showTooltip = (e: React.MouseEvent<HTMLButtonElement>, action: any) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setActiveTooltip({ id: `tooltip-${action.type}`, text: action.label, x: rect.left + rect.width / 2, y: rect.top });
+  };
+  
+  const hideTooltip = () => setActiveTooltip(null);
+  
+  const getActionIcon = (action: any, itemId: string) => {
+    // Show loading spinner if this action is loading for this item
+    if (actionLoading[`${itemId}-${action.type}`]) {
+      return getIcon('loading');
     }
     
-    // Special case for save - show filled/unfilled bookmark based on saved state
+    // Special case for save action (toggle between filled and outline)
     if (action.type === 'save') {
-      const isSaved = savedItems[rowId];
-      return getIcon(isSaved ? 'bookmarkFilled' : 'bookmark');
+      return savedItems[itemId] ? getIcon('bookmark-filled') : getIcon('bookmark');
     }
     
-    // For other actions, use the specified icon or the action type as fallback
+    // For all other actions, use the icon registry with action type as fallback
     return getIcon(action.icon || action.type);
   };
 
-  return (
-    <div className={styles.tableWrapper}>
-      <div className={styles.tableTitle}>{title}</div>
-      <div className={styles.tableContainer}>
-        <table className={styles.table}>
-          <tbody>
-            {tableData.rows.map((row) => (
-              <tr key={row.id} className={styles.tableRow} data-row-id={row.id}>
-                <td className={`${styles.tableCell} ${styles.firstTableCell}`} data-column-key={tableData.columns[0].key}>
+  // Define motion variants with consistent types
+  const tableVariants = {
+    collapsed: {
+      width: '200px',
+      height: '40px',
+      opacity: 1,
+      transition: { type: 'spring', stiffness: 300, damping: 30 }
+    },
+    expanded: {
+      width: '100%', 
+      height: 'auto',
+      opacity: 1,
+      transition: { type: 'spring', stiffness: 300, damping: 30 }
+    }
+  };
+
+  const contentVariants = {
+    expanded: { 
+      opacity: 1, 
+      height: 'auto',
+      transition: { opacity: { duration: 0.2 }, height: { type: 'spring', stiffness: 300, damping: 30 } } 
+    },
+    collapsed: { 
+      opacity: 0, 
+      height: 0,
+      transition: { opacity: { duration: 0.15 }, height: { type: 'spring', stiffness: 300, damping: 30 } } 
+    },
+  };
+
+  const collapsedIconVariants = {
+    initial: { opacity: 0, scale: 0.5 },
+    animate: { opacity: 1, scale: 1, transition: { delay: 0.1 } },
+    exit: { opacity: 0, scale: 0.5, transition: { duration: 0.1 } },
+  };
+
+  function startDrag(event: React.PointerEvent) {
+    dragControls.start(event, { snapToCursor: false });
+  }
+
+  // Calculate table width based on grid mode
+  const getTableWidth = () => {
+    if (isCollapsed) return '200px';
+    
+    if (isGridItem) {
+      // Always 50% width as requested
+      return '100%';
+    }
+    
+    // Default for non-grid tables
+    return singleTableMode && fixedWidth ? `${fixedWidth}px` : '50%';
+  };
+
+  // Content rendering logic
+  let content;
+  if (propsLoading) {
+    content = <TableLoadingContent />;
+  } else if (propsError) {
+    content = <TableErrorContent error={propsError} />;
+  } else if (!initialTableData?.rows?.length) {
+    content = <CreateNewTableContent />;
+  } else {
+    content = (
+      <table className={styles.table}>
+        <tbody ref={animationParent}>
+          <AnimatePresence key={initialTableData.rows.length}>
+            {initialTableData.rows.map((row, index) => (
+              <AnimatedTableRow key={row.id} id={row.id} delay={index} className={styles.tableRow}>
+                <td className={`${styles.tableCell} ${styles.firstTableCell}`} data-column-key={initialTableData.columns[0].key}>
                   <div className={styles.tableCellWithIcon}>
-                    <span className={styles.tableIcon}>
-                      {getIcon(row.icon || 'analytics')}
-                    </span>
-                    <span>{row[tableData.columns[0].key]}</span>
+                    <span className={styles.tableIcon}>{getIcon(row.icon)}</span>
+                    <span className={styles.tableCellContent}>{row[initialTableData.columns[0].key]}</span>
                   </div>
                 </td>
-                {tableData.columns.slice(1).map((column) => (
+                {initialTableData.columns.slice(1).map((column) => (
                   <td key={`${row.id}-${column.key}`} className={styles.tableCell} data-column-key={column.key}>
-                    {row[column.key]}
+                    <div className={styles.tableCellContent}>{row[column.key]}</div>
                   </td>
                 ))}
                 <td className={`${styles.tableCell} ${styles.tableCellActions}`}>
                   <div className={styles.tableActions}>
-                    {tableData.actions.map(action => (
-                      <button 
+                    {initialTableData.actions.map(action => (
+                      <motion.button 
                         key={action.type} 
                         className={styles.tableActionButton}
                         aria-label={action.label}
-                        title={action.label}
+                        onMouseEnter={(e) => showTooltip(e, action)}
+                        onMouseLeave={hideTooltip}
                         onClick={() => handleAction(action.type, row)}
                         disabled={actionLoading[`${row.id}-${action.type}`]}
                         data-action-type={action.type}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
                       >
-                        <span className={styles.tableActionIcon}>
-                          {getActionIcon(action, row.id)}
-                        </span>
-                      </button>
+                        {getActionIcon(action, row.id)}
+                      </motion.button>
                     ))}
                   </div>
-                  {actionMessages[row.id] && (
-                    <div className={styles.actionMessage}>
-                      {actionMessages[row.id]}
-                    </div>
-                  )}
+                  <AnimatePresence>
+                    {mounted && actionMessages[row.id] && (
+                      <motion.div
+                        className={styles.actionMessage}
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        {actionMessages[row.id]}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </td>
-              </tr>
+              </AnimatedTableRow>
             ))}
-          </tbody>
-        </table>
+          </AnimatePresence>
+        </tbody>
+      </table>
+    );
+  }
+
+  // Modified tooltip element to prevent hydration mismatch
+  const tooltipElement = mounted && activeTooltip ? (
+    <motion.div
+      className={styles.tooltip}
+      style={{
+        left: `${activeTooltip.x}px`,
+        top: `${activeTooltip.y}px`,
+        position: 'fixed',
+        transform: 'translate(-50%, -100%)'
+      }}
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+    >
+      {activeTooltip.text}
+    </motion.div>
+  ) : null;
+
+  // Handle export to XLSX
+  const handleExportTable = () => {
+    if (!initialTableData) return;
+    
+    try {
+      exportTableToXLSX(initialTableData);
+    } catch (error) {
+      console.error('Error exporting table:', error);
+      // Could add error feedback here
+    }
+  };
+
+  // Handle table deletion
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete();
+    }
+  };
+
+    // Only render once mounted to avoid SSR issues
+  if (!mounted) {
+    // For SSR, just return null to avoid hydration mismatch entirely
+    // The client will render the component after hydration is complete
+    return null;
+  }
+  
+  // Client-side rendering with full interactivity
+  return (
+    <motion.div 
+      ref={tableRef}
+      dragListener={false}
+      dragControls={dragControls}
+      className={`${styles.tableWrapper} ${isCollapsed ? styles.collapsedTableWrapper : styles.expandedTableWrapper} ${isGridItem ? styles.gridTableWrapper : ''} ${isActive ? styles.activeTable : ''} ${isCreateNew ? styles.createNewTable : ''}`}
+      style={{
+        position: isGridItem ? 'relative' : 'fixed',
+        left: isGridItem ? undefined : dragPosition.x,
+        top: isGridItem ? undefined : dragPosition.y,
+        cursor: isCollapsed ? 'pointer' : (snapToGrid && !isCollapsed && !isGridItem ? 'grab' : 'default'),
+        zIndex,
+        width: isGridItem ? '100%' : getTableWidth(),
+        maxWidth: '100%',
+        height: 'auto',
+        boxSizing: 'border-box',
+        overflow: 'hidden',
+        boxShadow: isGridItem ? '0 3px 10px rgba(0, 0, 0, 0.1)' : undefined,
+        margin: '0 auto'
+      }}
+      // Only enable drag when not in grid
+      drag={!isGridItem && (!isCollapsed || !snapToGrid || (snapToGrid && !isCollapsed))}
+      dragConstraints={dragConstraints}
+      dragMomentum={false}
+      variants={tableVariants}
+      animate={isCollapsed ? 'collapsed' : 'expanded'}
+      initial={isInitiallyCollapsed ? 'collapsed' : 'expanded'}
+      onDragStart={(event, info) => {
+        if (isGridItem) return;
+        
+        setIsDragging(true);
+        if (snapToGrid && !isCollapsed) {
+          startPositionRef.current = { 
+            x: info.point.x, 
+            y: info.point.y 
+          };
+          setIsGridDragging(true);
+        }
+      }}
+      onDragEnd={(event, info) => {
+        if (isGridItem) return;
+        
+        if (snapToGrid && !isCollapsed && startPositionRef.current) {
+          if (onPositionChange) {
+            const dragDistance = Math.sqrt(
+              Math.pow(info.point.x - startPositionRef.current.x, 2) + 
+              Math.pow(info.point.y - startPositionRef.current.y, 2)
+            );
+            
+            if (dragDistance > 50) {
+              onPositionChange({
+                x: info.point.x,
+                y: info.point.y
+              });
+            }
+          }
+          
+          if (gridPosition) {
+            setDragPosition(gridPosition);
+          }
+        } else {
+          handleDragEnd(info);
+        }
+
+        // Call the onDragEnd prop if provided
+        if (onDragEnd) {
+          onDragEnd({
+            x: info.point.x,
+            y: info.point.y
+          });
+        }
+        
+        setIsDragging(false);
+        setIsGridDragging(false);
+        startPositionRef.current = null;
+      }}
+      onClick={(e) => {
+        if (isCollapsed) {
+          toggleCollapse(e);
+        }
+        if (onClick) {
+          onClick();
+        }
+      }}
+    >
+      <div 
+        className={`${styles.tableHeaderOverlay} ${propsLoading ? styles.loadingTableHeader : ''}`}
+        onPointerDown={!isGridItem && !isCollapsed ? startDrag : undefined} 
+        style={{ cursor: isCollapsed || isDragging || isGridItem ? 'default' : 'grab' }}
+      >
+        <motion.div 
+          className={styles.tableTitle}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <div className={styles.tableTitleContent}>
+            {isCollapsed ? (initialTableData?.title || resolvedTitle || "Table") : resolvedTitle}
+            {propsLoading && <span className={styles.miniLoadingSpinner} />}
+          </div>
+          <div className={styles.tableControls}>
+            {!isCollapsed && (
+              <>
+                {!isCreateNew && (
+                  <motion.button
+                    onClick={handleExportTable}
+                    className={styles.tableExportButton}
+                    aria-label="Export table to XLSX"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <Download size={16} />
+                  </motion.button>
+                )}
+                {!isCreateNew && (
+                  <motion.button
+                    onClick={handleDelete}
+                    className={styles.tableDeleteButton}
+                    aria-label="Delete table"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <span className={styles.tableActionIcon}>{getIcon('delete')}</span>
+                  </motion.button>
+                )}
+              </>
+            )}
+            {collapsible && !isCreateNew && (
+              <motion.button
+                onClick={toggleCollapse}
+                className={styles.tableCollapseButton}
+                aria-label={isCollapsed ? "Expand table" : "Collapse table"}
+                whileTap={{ scale: 0.9 }}
+              >
+                {isCollapsed ? <Expand size={18} /> : <Minimize2 size={18} />}
+              </motion.button>
+            )}
+          </div>
+        </motion.div>
       </div>
+      
+      <AnimatePresence mode="wait">
+        {isCollapsed ? (
+          mounted && (
+            <motion.div
+              key="collapsed-table-title-container"
+              variants={collapsedIconVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className={styles.collapsedTableContent}
+            />
+          )
+        ) : (
+          mounted && (
+            <motion.div
+              key="expanded-table-content-wrapper"
+              variants={contentVariants} 
+              initial="collapsed" 
+              animate="expanded"
+              exit="collapsed"
+              className={styles.tableContainer}
+              style={{
+                width: '100%',
+                maxWidth: '100%',
+                boxSizing: 'border-box',
+                overflow: 'hidden'
+              }}
+            >
+              <div className={styles.tableContentScrollable}>
+                {content}
+              </div>
+              <AnimatePresence>{mounted && tooltipElement}</AnimatePresence>
+            </motion.div>
+          )
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function TableLoadingContent() {
+  return (
+    <div className={styles.tableLoadingContent}>
+      <motion.div
+        className={styles.loadingContainer}
+        initial={{ opacity: 0.5 }}
+        animate={{ opacity: 1 }}
+        transition={{ repeat: Infinity, repeatType: "reverse", duration: 0.8 }}
+      >
+        <div className={styles.loadingSpinner} />
+        <div className={styles.loadingText}>Generating table...</div>
+      </motion.div>
     </div>
   );
 }
 
-function TableLoading({ title }: { title?: React.ReactNode }) {
+function TableErrorContent({ error }: { error: string }) {
   return (
-    <div className={styles.tableWrapper}>
-      <div className={styles.tableTitle}>{title}</div>
-      <div className={styles.tableContainer}>
-        <div className={styles.tableLoading}>
-          Loading...
-        </div>
-      </div>
+    <div className={styles.tableErrorContent}>
+      <motion.div 
+        initial={{ scale: 0.95 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        <p>Error loading table: {error}</p>
+      </motion.div>
     </div>
   );
 }
 
-function TableError({ error, title }: { error: string; title?: React.ReactNode }) {
+function CreateNewTableContent() {
   return (
-    <div className={styles.tableWrapper}>
-      <div className={styles.tableTitle}>{title}</div>
-      <div className={styles.tableContainer}>
-        <div className={styles.tableError}>
-          <p>Error loading table: {error}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TableEmptyState({ title }: { title?: React.ReactNode }) {
-  return (
-    <div className={styles.tableWrapper}>
-      <div className={styles.tableTitle}>{title}</div>
-      <div className={styles.tableContainer}>
-        <table className={styles.table}>
-          <tbody>
-            <tr className={`${styles.tableRow} ${styles.tableEmptyRow}`}>
-              <td className={`${styles.tableCell} ${styles.firstTableCell}`}>
-                <div className={styles.tableCellWithIcon}>
-                  <span className={styles.tableIcon}>
-                    {getIcon('analytics')}
-                  </span>
-                  <span>Title</span>
-                </div>
-              </td>
-              <td className={styles.tableCell}>Cell</td>
-              <td className={styles.tableCell}>Cell</td>
-              <td className={`${styles.tableCell} ${styles.tableCellActions}`}>
-                <div className={styles.tableActions}>
-                  <span className={styles.tableActionIcon}>
-                    {getIcon('inbox')}
-                  </span>
-                  <span className={styles.tableActionIcon}>
-                    {getIcon('delete')}
-                  </span>
-                  <span className={styles.tableActionIcon}>
-                    {getIcon('menu')}
-                  </span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <table className={styles.table}>
+      <tbody>
+        <tr className={`${styles.tableRow} ${styles.createNewTableRow}`}> 
+          <td className={`${styles.tableCell} ${styles.firstTableCell}`}>
+            <div className={styles.tableCellWithIcon}>
+              <span className={styles.tableIcon}>{getIcon('analytics')}</span>
+              <span>Title</span>
+            </div>
+          </td>
+          <td className={styles.tableCell}>Cell</td>
+          <td className={styles.tableCell}>Cell</td>
+          <td className={`${styles.tableCell} ${styles.tableCellActions}`}>
+            <div className={styles.tableActions}>
+              <span className={styles.tableActionIcon}>{getIcon('inbox')}</span>
+              <span className={styles.tableActionIcon}>{getIcon('delete')}</span>
+              <span className={styles.tableActionIcon}>{getIcon('menu')}</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   );
 } 

@@ -1,3 +1,10 @@
+/**
+ * API endpoint to retrieve action handler configurations from the backend
+ * 
+ * TODO: This API route is currently disabled in the application.
+ * It will be used later for dynamic action handler fetching when the backend is complete.
+ * The SyncService in the client app has been disabled pending backend completion.
+ */
 import { NextResponse } from 'next/server';
 
 /**

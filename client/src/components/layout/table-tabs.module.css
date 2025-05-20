@@ -1,0 +1,162 @@
+.tabsContainer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 900;
+  pointer-events: none; /* Allow clicking through the container */
+}
+
+.tab {
+  background-color: rgba(255, 255, 255, 0.8);
+  border-radius: 12px;
+  padding: 0 16px;
+  width: 200px !important;
+  height: 40px !important;
+  box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.2s ease-out;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  white-space: nowrap;
+  overflow: hidden;
+  pointer-events: auto; /* Re-enable pointer events for the tab */
+  transform: translateY(0);
+}
+
+.activeTab {
+  background-color: rgba(23, 132, 239, 0.1);
+  border: 1px solid rgba(23, 132, 239, 0.2);
+}
+
+.activeTab .tabTitle {
+  color: #1784EF;
+}
+
+.activeTab .tabIcon {
+  color: #1784EF;
+}
+
+.tab:hover {
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
+}
+
+.tabContent {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  flex-grow: 1;
+}
+
+.tabIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  color: #555555;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.tabTitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: #A6A6A6;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.expandButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  width: 24px;
+  height: 24px;
+  color: var(--color-blue, #1784EF);
+  cursor: pointer;
+  margin-left: 8px;
+  padding: 0;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.expandButton:hover {
+  opacity: 1;
+}
+
+.createNewTab {
+  background-color: rgba(23, 132, 239, 0.1); /* Translucent blue for Create New Tab */
+  border: 1px solid rgba(23, 132, 239, 0.2);
+}
+
+.createNewTab .tabTitle {
+  color: #1784EF; /* Blue text */
+}
+
+.createNewTab .tabIcon {
+  color: #1784EF; /* Blue icon */
+}
+
+.loadingTab {
+  background-color: rgba(23, 132, 239, 0.05);
+  border: 1px solid rgba(23, 132, 239, 0.2);
+  pointer-events: none; /* Disable interactions when loading */
+  cursor: default !important;
+}
+
+.loadingTab .tabTitle {
+  color: rgba(23, 132, 239, 0.7);
+}
+
+.loadingSpinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(23, 132, 239, 0.3);
+  border-radius: 50%;
+  border-top-color: #1784EF;
+  animation: spin 1s infinite linear;
+}
+
+.loadingDot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #1784EF;
+  animation: pulse 1s infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+} 

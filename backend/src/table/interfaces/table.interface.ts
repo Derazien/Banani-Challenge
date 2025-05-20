@@ -1,4 +1,5 @@
 export interface TableData {
+  key: string;
   title: string;
   columns: TableColumn[];
   rows: TableRow[];
@@ -13,6 +14,7 @@ export interface TableColumn {
 
 export interface TableRow {
   id: string;
+  icon: string;
   [key: string]: any;
 }
 
@@ -20,4 +22,10 @@ export interface TableAction {
   type: string;
   label: string;
   icon?: string;
+}
+
+// New DTO for editing tables
+export interface EditTableDto {
+  prompt: string;
+  existingTable: TableData;
 } 

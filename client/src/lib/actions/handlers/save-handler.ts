@@ -181,6 +181,26 @@ export class SaveHandler implements ActionHandler {
   }
   
   /**
+   * Get all saved items
+   */
+  public getSavedItems(): any[] {
+    if (!this.storage) {
+      return [];
+    }
+    
+    const savedItemsJson = this.storage.getItem(this.storageKey);
+    if (!savedItemsJson) {
+      return [];
+    }
+    
+    try {
+      return JSON.parse(savedItemsJson);
+    } catch {
+      return [];
+    }
+  }
+  
+  /**
    * Get handler metadata
    */
   public getMetadata(): ActionHandlerMetadata {

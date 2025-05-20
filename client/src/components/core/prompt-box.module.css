@@ -1,26 +1,77 @@
 .promptBox {
-  width: 100%;
+  position: fixed;
   background-color: white;
-  overflow: hidden;
   border-radius: 12px 28px 28px 28px;
-  box-shadow: 0px 16px 28px rgba(0, 0, 0, 0.08);
+  box-shadow: 0px 16px 28px rgba(0, 0, 0, 0.12), 0px 8px 12px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  /* z-index is dynamically set via props - default is 1000 */
+  padding: 20px;
+}
+
+.expandedPromptBox {
+  padding: 10px;
+}
+
+.collapsedPromptBox {
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dragging {
+  box-shadow: 0px 20px 35px rgba(0,0,0,0.2), 0px 10px 15px rgba(0,0,0,0.1);
+  cursor: grabbing !important;
+}
+
+.expandedContentWrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.collapseButton {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  background-color: transparent;
+  border: none;
+  padding: 6px;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--color-blue);
+  transition: background-color 0.2s ease;
+}
+
+.collapseButton:hover {
+  background-color: rgba(23, 132, 239, 0.1);
+}
+
+.collapsedIconContainer {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .promptBoxContent {
+  width: 100%;
   position: relative;
-  display: flex;
-  flex-direction: column;
-  height: 230px;
-  box-sizing: border-box;
 }
 
 .promptTextarea {
   width: 100%;
-  height: 100%;
-  padding: 20px;
-  padding-bottom: 70px;
-  background-color: white;
+  min-height: 130px;
+  padding: 15px;
+  padding-right: 35px;
   border: none;
+  border-radius: 8px;
   outline: none;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
@@ -28,8 +79,8 @@
   line-height: 24px;
   color: black;
   resize: none;
-  margin: 0;
   box-sizing: border-box;
+  background-color: transparent;
 }
 
 .promptTextarea::placeholder {
@@ -37,21 +88,68 @@
   opacity: 0.9;
 }
 
+.bottomControlsContainer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding: 0 0px;
+}
+
+.suggestionsArea {
+  flex-grow: 1;
+}
+
+.suggestionsToggleButton {
+  background-color: transparent;
+  border: none;
+  color: var(--color-blue);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s ease;
+  margin-left: 10px;
+}
+
+.suggestionsToggleButton:hover {
+  color: #0056b3;
+}
+
+.suggestionsToggleButton svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease-in-out;
+}
+
+.suggestionsToggleButton[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+
 .promptButton {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  width: 40px;
-  height: 40px;
-  border-radius: 31px;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #1784EF;
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
-  padding: 0;
-  border: none;
   cursor: pointer;
-  margin: 0;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  flex-shrink: 0;
+}
+
+.promptButton:hover:not(:disabled) {
+  background-color: #0056b3;
+  transform: scale(1.05);
+}
+
+.promptButton:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 .promptButtonEnabled {
@@ -67,4 +165,92 @@
   width: 24px;
   height: 24px;
   color: white;
+}
+
+.suggestionsListWrapper {
+  width: 100%;
+  overflow: hidden;
+  margin-top: 8px;
+  margin-left: 10px;
+}
+
+.suggestionItem {
+  font-size: 14px;
+  color: #333;
+  padding: 10px 0px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+.suggestionItem:last-child {
+  border-bottom: none;
+}
+
+.suggestionItem:hover {
+  color: var(--color-blue);
+  background-color: #f9f9f9;
+}
+
+.loadingPromptBox {
+  pointer-events: none; /* Prevent interaction while loading */
+  opacity: 0.9;
+}
+
+.promptLoadingIndicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, 
+    rgba(23, 132, 239, 0), 
+    rgba(23, 132, 239, 0.8), 
+    rgba(23, 132, 239, 0)
+  );
+  animation: loadingBarAnimation 1.5s infinite;
+}
+
+.loadingSpinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s infinite linear;
+}
+
+.miniLoadingSpinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: white;
+  animation: spin 1s infinite linear;
+}
+
+.loadingButton {
+  cursor: not-allowed !important;
+}
+
+.editModePromptBox {
+  border-left: 3px solid #1784EF;
+  padding-left: 12px;
+}
+
+@keyframes loadingBarAnimation {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 } 

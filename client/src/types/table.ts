@@ -12,11 +12,12 @@ export interface TableAction {
 
 export interface TableRow {
   id: string
+  icon: string
   [key: string]: any
-  icon?: string
 }
 
 export interface TableData {
+  key: string
   title: string
   columns: TableColumn[]
   rows: TableRow[]

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import styles from '../core/table.module.css';
 
 interface ItemEditFormProps {
   item: Record<string, any>;
@@ -81,14 +82,14 @@ export function ItemEditForm({
   };
   
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <form onSubmit={handleSubmit} className={styles.editForm}>
       {getSortedEntries().map(([key, value]) => {
         const isReadOnly = readOnlyKeys.includes(key);
         const fieldType = getFieldType(key, value);
         
         return (
           <div key={key} className="space-y-1">
-            <label htmlFor={`field-${key}`} className="block text-sm font-medium text-gray-700">
+            <label htmlFor={`field-${key}`} className={styles.editFieldLabel}>
               {formatLabel(key)}
             </label>
             
@@ -112,28 +113,26 @@ export function ItemEditForm({
                   Number(e.target.value) : e.target.value)}
                 readOnly={isReadOnly}
                 disabled={isReadOnly}
-                className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm 
-                  focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm
-                  ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                className={`${styles.editField} ${isReadOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
               />
             )}
           </div>
         );
       })}
       
-      <div className="pt-4 flex justify-end space-x-3 border-t border-gray-200">
-        <button
-          type="button"
+      <div className={styles.editActions}>
+        <button 
+          type="button" 
           onClick={onCancel}
-          className="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className={styles.editCancelButton}
         >
           Cancel
         </button>
-        <button
+        <button 
           type="submit"
-          className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          className={styles.editSubmitButton}
         >
-          Save Changes
+          Save
         </button>
       </div>
     </form>

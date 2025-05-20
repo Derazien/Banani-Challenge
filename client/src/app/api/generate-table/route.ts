@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid request format" }, { status: 400 });
     }
 
-    const { prompt } = body;
+    const { prompt, existingTable } = body;
     
     if (!prompt || typeof prompt !== 'string') {
       console.error("Invalid or missing prompt:", prompt);
@@ -22,12 +22,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Prompt cannot be empty" }, { status: 400 });
     }
 
-    console.log("Sending request to backend with prompt:", prompt);
+    // Check if this is a table edit request
+    const isEditMode = existingTable !== undefined;
+    console.log(`Sending ${isEditMode ? 'edit' : 'create'} request to backend with prompt:`, prompt);
+    if (isEditMode) {
+      console.log("Including existing table:", existingTable.title);
+    }
+    
+    // Prepare the request body - include existingTable only if it's provided
+    const requestBody = isEditMode 
+      ? { prompt, existingTable } 
+      : { prompt };
     
     const backendRes = await fetch("http://localhost:3001/api/table/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!backendRes.ok) {

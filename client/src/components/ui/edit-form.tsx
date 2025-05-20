@@ -5,6 +5,9 @@ import { Button } from './button';
 import { Input } from './input';
 import { Label } from './label';
 import { Textarea } from './textarea';
+import { motion } from 'framer-motion';
+import { Check, AlertCircle, Save, X } from 'lucide-react';
+import styles from '../core/table.module.css';
 
 interface EditFormProps {
   item: Record<string, any>;
@@ -15,21 +18,45 @@ interface EditFormProps {
 export function EditForm({ item, onSave, onCancel }: EditFormProps) {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   // Initialize form data from item
   useEffect(() => {
     setFormData({ ...item });
+    setIsDirty(false);
   }, [item]);
 
   // Handle input changes
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target as HTMLInputElement;
+    
+    // Convert values to appropriate types
+    let parsedValue: any = value;
+    
+    // Handle number inputs
+    if (type === 'number') {
+      parsedValue = value === '' ? '' : Number(value);
+    }
+    
+    // Handle checkbox inputs
+    if (type === 'checkbox') {
+      parsedValue = (e.target as HTMLInputElement).checked;
+    }
+    
+    // Handle date inputs
+    if (type === 'date' || type === 'datetime-local') {
+      parsedValue = value === '' ? null : value;
+    }
+    
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: parsedValue,
     }));
+    
+    setIsDirty(true);
 
     // Clear error when field is modified
     if (errors[name]) {
@@ -45,102 +72,381 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     
-    // Ensure ID is present
-    if (!formData.id && item.id) {
-      newErrors.id = 'ID is required';
-    }
+    // Ensure required fields are filled
+    Object.entries(formData).forEach(([key, value]) => {
+      // Check if field is required (this is a simple example - you'd want to customize this)
+      const isRequired = key === 'id' || key === 'name' || key === 'title';
+      
+      if (isRequired && (value === undefined || value === null || value === '')) {
+        newErrors[key] = `${formatFieldName(key)} is required`;
+      }
+      
+      // Validate email fields
+      if (key.includes('email') && value && !validateEmail(value as string)) {
+        newErrors[key] = 'Please enter a valid email address';
+      }
+      
+      // Validate URL fields
+      if ((key.includes('url') || key.includes('website')) && 
+          value && !validateUrl(value as string)) {
+        newErrors[key] = 'Please enter a valid URL';
+      }
+    });
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (validateForm()) {
-      onSave(formData);
+  
+  // Email validation
+  const validateEmail = (email: string): boolean => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+  
+  // URL validation
+  const validateUrl = (url: string): boolean => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
     }
   };
 
-  // Determine field type based on value
+  // Format field names to be more readable
+  const formatFieldName = (key: string): string => {
+    return key
+      .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+      .replace(/_/g, ' ')         // Replace underscores with spaces
+      .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (validateForm()) {
+      setIsSubmitting(true);
+      try {
+        // Preserve the icon and ID fields
+        const preservedData = {
+          ...formData,
+          icon: formData.icon || item.icon, // Keep the icon if it exists
+          id: formData.id || item.id,       // Keep the ID if it exists
+        };
+        
+        await onSave(preservedData);
+        setIsDirty(false);
+      } catch (error) {
+        console.error('Error saving data:', error);
+        setErrors({ form: 'Failed to save changes. Please try again.' });
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
+  // Determine field type based on key and value
   const getFieldType = (key: string, value: any): string => {
-    if (key === 'email') return 'email';
-    if (key === 'password') return 'password';
-    if (key === 'url') return 'url';
+    // Common field types based on field name
+    if (key === 'email' || key.includes('email')) return 'email';
+    if (key === 'password' || key.includes('password')) return 'password';
+    if (key === 'url' || key.includes('url') || key.includes('website')) return 'url';
+    if (key === 'phone' || key.includes('phone') || key.includes('tel')) return 'tel';
+    
+    // Field types based on value type
     if (typeof value === 'number') return 'number';
-    if (key.includes('date') || key.includes('time')) return 'datetime-local';
+    if (typeof value === 'boolean') return 'checkbox';
+    
+    // Date fields
+    if (key.includes('date')) return 'date';
+    if (key.includes('time')) return 'time';
+    if (key.includes('datetime')) return 'datetime-local';
+    
+    // Default to text for strings and other types
     return 'text';
   };
 
-  // Filter out internal fields
-  const renderableFields = Object.entries(formData).filter(
-    ([key]) => !key.startsWith('_') && key !== 'id'
-  );
+  // Group fields into categories for better organization
+  const getFieldGroups = () => {
+    // Fields that should appear at the top (important fields)
+    const priorityFields = ['name', 'title', 'description', 'summary'];
+    
+    // Fields related to dates and times
+    const dateTimeFields = Object.keys(formData).filter(key => 
+      key.includes('date') || key.includes('time') || key.includes('created') || key.includes('updated')
+    );
+    
+    // Fields related to metadata
+    const metaFields = Object.keys(formData).filter(key => 
+      key.includes('tag') || key.includes('category') || key.includes('type') || key.includes('status')
+    );
+    
+    // Contact information fields
+    const contactFields = Object.keys(formData).filter(key => 
+      key.includes('email') || key.includes('phone') || key.includes('address') || 
+      key.includes('contact') || key.includes('website') || key.includes('url')
+    );
+    
+    // Filter out fields that will be in other groups and system fields
+    const excludedFields = [
+      'id', 'icon', ...priorityFields, ...dateTimeFields, ...metaFields, ...contactFields
+    ];
+    
+    const otherFields = Object.keys(formData).filter(key => 
+      !excludedFields.includes(key) && !key.startsWith('_')
+    );
+    
+    return {
+      priority: priorityFields.filter(key => key in formData),
+      dateTime: dateTimeFields,
+      meta: metaFields,
+      contact: contactFields,
+      other: otherFields
+    };
+  };
+
+  // Get the field groups
+  const fieldGroups = getFieldGroups();
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <motion.form 
+      onSubmit={handleSubmit} 
+      className={styles.editForm}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
       {/* ID field (read-only) */}
       {formData.id && (
-        <div className="space-y-2">
-          <Label htmlFor="id">ID</Label>
-          <Input
-            id="id"
-            name="id"
-            value={formData.id || ''}
-            readOnly
-            className="bg-gray-50"
-          />
+        <motion.div 
+          className="bg-gray-50 p-3 rounded-md flex items-center"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <span className="text-gray-500 text-sm font-medium mr-2">ID:</span>
+          <span className="font-mono text-sm">{formData.id}</span>
+        </motion.div>
+      )}
+      
+      {/* Form error message */}
+      {errors.form && (
+        <motion.div 
+          className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-md flex items-center space-x-2"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <AlertCircle size={16} />
+          <span>{errors.form}</span>
+        </motion.div>
+      )}
+      
+      {/* Priority fields */}
+      {fieldGroups.priority.length > 0 && (
+        <div className="space-y-4">
+          {fieldGroups.priority.map((key, index) => (
+            <motion.div 
+              key={key} 
+              className="space-y-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <Label htmlFor={key} className={styles.editFieldLabel}>{formatFieldName(key)}</Label>
+              {typeof formData[key] === 'string' && formData[key].length > 50 ? (
+                <Textarea
+                  id={key}
+                  name={key}
+                  value={formData[key] || ''}
+                  onChange={handleChange}
+                  rows={3}
+                  className={errors[key] ? 'border-red-300' : styles.editField}
+                />
+              ) : (
+                <Input
+                  id={key}
+                  name={key}
+                  type={getFieldType(key, formData[key])}
+                  value={formData[key] === null ? '' : formData[key]}
+                  onChange={handleChange}
+                  className={errors[key] ? 'border-red-300' : styles.editField}
+                  placeholder={`Enter ${formatFieldName(key).toLowerCase()}`}
+                />
+              )}
+              {errors[key] && (
+                <p className="text-xs text-red-600 mt-1 flex items-center">
+                  <AlertCircle size={12} className="mr-1" />
+                  {errors[key]}
+                </p>
+              )}
+            </motion.div>
+          ))}
         </div>
       )}
-
-      {/* Dynamic fields based on item data */}
-      {renderableFields.map(([key, value]) => {
-        const fieldType = getFieldType(key, value);
-        const fieldLabel = key
-          .replace(/([A-Z])/g, ' $1')
-          .replace(/^./, (str) => str.toUpperCase());
-
-        return (
-          <div key={key} className="space-y-2">
-            <Label htmlFor={key}>{fieldLabel}</Label>
-            {typeof value === 'string' && value.length > 50 ? (
-              <Textarea
-                id={key}
-                name={key}
-                value={value}
-                onChange={handleChange}
-                rows={3}
-                className={errors[key] ? 'border-red-500' : ''}
-              />
-            ) : (
-              <Input
-                id={key}
-                name={key}
-                type={fieldType}
-                value={value === null ? '' : value}
-                onChange={handleChange}
-                className={errors[key] ? 'border-red-500' : ''}
-              />
-            )}
-            {errors[key] && (
-              <p className="text-xs text-red-500 mt-1">{errors[key]}</p>
-            )}
+      
+      {/* Contact information fields */}
+      {fieldGroups.contact.length > 0 && (
+        <motion.div 
+          className="border border-gray-200 rounded-md p-4 space-y-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <h3 className="text-sm font-medium text-gray-500">Contact Information</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {fieldGroups.contact.map((key) => (
+              <div key={key} className="space-y-2">
+                <Label htmlFor={key} className={styles.editFieldLabel}>{formatFieldName(key)}</Label>
+                <Input
+                  id={key}
+                  name={key}
+                  type={getFieldType(key, formData[key])}
+                  value={formData[key] === null ? '' : formData[key]}
+                  onChange={handleChange}
+                  className={errors[key] ? 'border-red-300' : styles.editField}
+                  placeholder={`Enter ${formatFieldName(key).toLowerCase()}`}
+                />
+                {errors[key] && (
+                  <p className="text-xs text-red-600 mt-1">{errors[key]}</p>
+                )}
+              </div>
+            ))}
           </div>
-        );
-      })}
+        </motion.div>
+      )}
+      
+      {/* Metadata fields */}
+      {fieldGroups.meta.length > 0 && (
+        <motion.div 
+          className="border border-gray-200 rounded-md p-4 space-y-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.15 }}
+        >
+          <h3 className="text-sm font-medium text-gray-500">Metadata</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {fieldGroups.meta.map((key) => (
+              <div key={key} className="space-y-2">
+                <Label htmlFor={key} className={styles.editFieldLabel}>{formatFieldName(key)}</Label>
+                <Input
+                  id={key}
+                  name={key}
+                  type={getFieldType(key, formData[key])}
+                  value={formData[key] === null ? '' : formData[key]}
+                  onChange={handleChange}
+                  className={errors[key] ? 'border-red-300' : styles.editField}
+                />
+                {errors[key] && (
+                  <p className="text-xs text-red-600 mt-1">{errors[key]}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+      
+      {/* Date and time fields */}
+      {fieldGroups.dateTime.length > 0 && (
+        <motion.div 
+          className="border border-gray-200 rounded-md p-4 space-y-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+        >
+          <h3 className="text-sm font-medium text-gray-500">Dates & Times</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {fieldGroups.dateTime.map((key) => (
+              <div key={key} className="space-y-2">
+                <Label htmlFor={key} className={styles.editFieldLabel}>{formatFieldName(key)}</Label>
+                <Input
+                  id={key}
+                  name={key}
+                  type={getFieldType(key, formData[key])}
+                  value={formData[key] === null ? '' : formData[key]}
+                  onChange={handleChange}
+                  className={errors[key] ? 'border-red-300' : styles.editField}
+                />
+                {errors[key] && (
+                  <p className="text-xs text-red-600 mt-1">{errors[key]}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
+      
+      {/* Other fields */}
+      {fieldGroups.other.length > 0 && (
+        <motion.div 
+          className="space-y-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.25 }}
+        >
+          <h3 className="text-sm font-medium text-gray-500">Additional Information</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {fieldGroups.other.map((key) => (
+              <div key={key} className="space-y-2">
+                <Label htmlFor={key} className={styles.editFieldLabel}>{formatFieldName(key)}</Label>
+                {typeof formData[key] === 'string' && formData[key].length > 50 ? (
+                  <Textarea
+                    id={key}
+                    name={key}
+                    value={formData[key] || ''}
+                    onChange={handleChange}
+                    rows={2}
+                    className={errors[key] ? 'border-red-300' : styles.editField}
+                  />
+                ) : (
+                  <Input
+                    id={key}
+                    name={key}
+                    type={getFieldType(key, formData[key])}
+                    value={formData[key] === null ? '' : formData[key]}
+                    onChange={handleChange}
+                    className={errors[key] ? 'border-red-300' : styles.editField}
+                  />
+                )}
+                {errors[key] && (
+                  <p className="text-xs text-red-600 mt-1">{errors[key]}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Action buttons */}
-      <div className="flex justify-end space-x-2 pt-4 border-t">
+      <div className={styles.editActions}>
         <Button 
           type="button" 
           variant="outline" 
           onClick={onCancel}
+          className={styles.editCancelButton}
         >
+          <X size={16} className="mr-1" />
           Cancel
         </Button>
-        <Button type="submit">Save Changes</Button>
+        <Button 
+          type="submit" 
+          disabled={!isDirty || isSubmitting}
+          className={styles.editSubmitButton}
+        >
+          {isSubmitting ? (
+            <span className="inline-flex items-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Saving...
+            </span>
+          ) : (
+            <>
+              <Save size={16} className="mr-1" />
+              Save
+            </>
+          )}
+        </Button>
       </div>
-    </form>
+    </motion.form>
   );
 } 

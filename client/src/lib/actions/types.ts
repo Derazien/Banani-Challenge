@@ -1,8 +1,12 @@
+// Import the TableData type 
+import { TableData } from '@/types/table';
+
 // Define the result of an action execution
 export interface ActionResult {
   success: boolean;
   message?: string;
   data?: any;
+  error?: string;
 }
 
 // Define the action handler interface that all handlers must implement
@@ -23,7 +27,7 @@ export interface ActionContext {
   tableId?: string;
   viewId?: string;
   tableTitle?: string;
-  tableData?: any;
+  tableData?: TableData;
   updateData?: (updatedItem: any) => void;
   removeItem?: (itemId: string) => void;
   [key: string]: any;
@@ -66,20 +70,4 @@ export interface DynamicHandlerModule {
   ) => Promise<ActionHandler>;
   
   decryptHandlerCode: (encryptedCode: string, key: string) => string;
-}
-
-// Create a declaration for the semver module
-declare module 'semver';
-
-// Create a declaration for the dynamic-handler module
-declare module './dynamic-handler' {
-  import { ActionHandler, ActionHandlerConfig } from './types';
-  
-  export function createDynamicHandler(
-    type: string,
-    code: string,
-    config: ActionHandlerConfig
-  ): Promise<ActionHandler>;
-  
-  export function decryptHandlerCode(encryptedCode: string, key: string): string;
 } 
