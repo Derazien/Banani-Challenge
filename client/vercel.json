@@ -1,12 +1,23 @@
 {
+  "version": 2,
+  "buildCommand": "npm install --legacy-peer-deps && npm run build",
+  "installCommand": "npm install --legacy-peer-deps",
+  "framework": "nextjs",
+  "outputDirectory": ".next",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://banani-backend.onrender.com/api/:path*"
+      "destination": "https://banani-challenge.onrender.com/api/:path*"
     }
   ],
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://banani-backend.onrender.com"
+    "NEXT_PUBLIC_API_URL": "https://banani-challenge.onrender.com"
   },
   "headers": [
     {
@@ -26,8 +37,5 @@
         }
       ]
     }
-  ],
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
-  "framework": "nextjs"
+  ]
 } 

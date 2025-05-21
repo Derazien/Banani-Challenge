@@ -22,8 +22,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("dark", inter.variable)}>
-      <head />
+    <html lang="en" className={cn("dark", inter.variable)}><head />
       <body className="min-h-screen font-sans antialiased overflow-x-hidden bg-slate-700 text-slate-200">
         <div className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden rounded-lg bg-slate-700">
           <div className="pointer-events-none absolute inset-0 z-20 h-full w-full bg-slate-700 [mask-image:radial-gradient(ellipse_at_center,transparent_30%,black)]" />

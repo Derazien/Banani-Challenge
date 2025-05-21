@@ -9,6 +9,12 @@ import {
 // Handler version - will be updated from env later
 const HANDLER_VERSION = '1.0.0';
 
+// Define the structure of a saved item
+interface SavedItem {
+  id: string;
+  [key: string]: unknown;
+}
+
 /**
  * SaveHandler provides bookmark/save functionality
  */
@@ -46,7 +52,7 @@ export class SaveHandler implements ActionHandler {
   /**
    * Execute the save action - toggle saved state
    */
-  public async execute(rowData: any, context?: ActionContext): Promise<ActionResult> {
+  public async execute(rowData: Record<string, unknown>, context?: ActionContext): Promise<ActionResult> {
     // Ensure the handler is enabled
     if (!this.config.enabled) {
       return {
@@ -64,7 +70,7 @@ export class SaveHandler implements ActionHandler {
     }
     
     try {
-      const { id } = rowData;
+      const id = rowData.id as string;
       
       if (!id) {
         return {
@@ -89,7 +95,7 @@ export class SaveHandler implements ActionHandler {
         };
       } else {
         // If not saved, save it
-        this.addToSaved(rowData);
+        this.addToSaved(rowData as SavedItem);
         return {
           success: true,
           message: 'Item saved successfully',
@@ -123,7 +129,7 @@ export class SaveHandler implements ActionHandler {
     
     try {
       const savedItems = JSON.parse(savedItemsJson);
-      return savedItems.some((item: any) => item.id === id);
+      return savedItems.some((item: SavedItem) => item.id === id);
     } catch {
       return false;
     }
@@ -132,10 +138,10 @@ export class SaveHandler implements ActionHandler {
   /**
    * Add an item to saved items
    */
-  private addToSaved(item: any): void {
+  private addToSaved(item: SavedItem): void {
     if (!this.storage) return;
     
-    let savedItems: any[] = [];
+    let savedItems: SavedItem[] = [];
     const savedItemsJson = this.storage.getItem(this.storageKey);
     
     if (savedItemsJson) {
@@ -153,7 +159,7 @@ export class SaveHandler implements ActionHandler {
     savedItems.push(item);
     
     // Limit to max items if specified
-    const maxItems = this.config.settings?.maxItems || 50;
+    const maxItems = typeof this.config.settings?.maxItems === 'number' ? this.config.settings.maxItems : 50;
     if (savedItems.length > maxItems) {
       savedItems = savedItems.slice(-maxItems);
     }
@@ -173,7 +179,7 @@ export class SaveHandler implements ActionHandler {
     
     try {
       let savedItems = JSON.parse(savedItemsJson);
-      savedItems = savedItems.filter((item: any) => item.id !== id);
+      savedItems = savedItems.filter((item: SavedItem) => item.id !== id);
       this.storage.setItem(this.storageKey, JSON.stringify(savedItems));
     } catch {
       // If there's an error parsing, just ignore
@@ -183,7 +189,7 @@ export class SaveHandler implements ActionHandler {
   /**
    * Get all saved items
    */
-  public getSavedItems(): any[] {
+  public getSavedItems(): SavedItem[] {
     if (!this.storage) {
       return [];
     }

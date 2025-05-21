@@ -13,7 +13,7 @@ export interface TableAction {
 export interface TableRow {
   id: string
   icon: string
-  [key: string]: any
+  [key: string]: string | number | boolean | null | undefined
 }
 
 export interface TableData {

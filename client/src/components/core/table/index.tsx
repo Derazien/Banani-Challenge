@@ -3,12 +3,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getIcon } from '@/components/icon-registry';
-import { TableData } from '@/types/table';
+import { TableData, TableAction } from '@/types/table';
 import { ActionContext } from '@/lib/actions/types';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { exportTableToXLSX } from '@/lib/utils/xlsx-export';
 import { useTableActions } from '@/hooks/use-table-actions';
-import { useTooltips, TooltipInfo } from '@/hooks/use-tooltips';
+import { useTooltips } from '@/hooks/use-tooltips';
 
 import { TableLoadingContent } from './table-loading';
 import { TableErrorContent } from './table-error';
@@ -36,6 +36,7 @@ interface TableProps {
   onDelete?: () => void;
   isCreateNew?: boolean;
   onClick?: () => void;
+  onErrorDismiss?: () => void;
 }
 
 /**
@@ -60,7 +61,8 @@ export function Table({
   isActive = false,
   onDelete,
   isCreateNew = false,
-  onClick
+  onClick,
+  onErrorDismiss
 }: TableProps) {
   // Local state
   const [isCollapsed, setIsCollapsed] = useState(isInitiallyCollapsed);
@@ -68,7 +70,7 @@ export function Table({
   
   // Create a proper ref for the animation parent
   const animationParentRef = useRef<HTMLTableSectionElement>(null);
-  const [animationParent] = useAutoAnimate();
+  const [animationParent] = useAutoAnimate<HTMLElement>();
   
   // Table actions hook
   const { 
@@ -87,8 +89,8 @@ export function Table({
     
     // Apply the auto-animate ref to our ref object
     if (animationParentRef.current) {
-      // @ts-ignore - We know this is safe as we're just connecting the refs
-      animationParent(animationParentRef.current);
+      // Cast to unknown first, then to HTMLElement to safely apply the ref
+      animationParent(animationParentRef.current as unknown as HTMLElement);
     }
   }, [animationParent]);
   
@@ -117,22 +119,22 @@ export function Table({
   /**
    * @function
    * @param {React.MouseEvent<HTMLButtonElement>} e - The mouse event
-   * @param {any} action - The action object
+   * @param {TableAction} action - The action object
    * @returns {void}
    * Handle tooltip display
    */
-  const handleShowTooltip = (e: React.MouseEvent<HTMLButtonElement>, action: any) => {
+  const handleShowTooltip = (e: React.MouseEvent<HTMLButtonElement>, action: TableAction) => {
     showTooltip(e, action.label, `tooltip-${action.type}`);
   };
   
   /**
    * @function
-   * @param {any} action - The action object
+   * @param {TableAction} action - The action object
    * @param {string} itemId - The item ID
    * @returns {React.ReactNode}
    * Get action icon wrapper
    */
-  const getActionIcon = (action: any, itemId: string) => {
+  const getActionIcon = (action: TableAction, itemId: string) => {
     return getActionIconHelper(action, itemId, getIcon);
   };
 
@@ -186,7 +188,7 @@ export function Table({
   if (propsLoading) {
     content = <TableLoadingContent />;
   } else if (propsError) {
-    content = <TableErrorContent error={propsError} />;
+    content = <TableErrorContent error={propsError} onDismiss={onErrorDismiss} />;
   } else if (!initialTableData?.rows?.length) {
     content = <CreateNewTableContent />;
   } else {
@@ -243,7 +245,7 @@ export function Table({
   // Client-side rendering with full interactivity
   return (
     <motion.div 
-      className={`${styles.tableWrapper} ${isCollapsed ? styles.collapsedTableWrapper : styles.expandedTableWrapper} ${isActive ? styles.activeTable : ''} ${isCreateNew ? styles.createNewTable : ''}`}
+      className={`${styles.tableWrapper} ${styles.gridTableItem} ${isCollapsed ? styles.collapsedTableWrapper : styles.expandedTableWrapper} ${isActive ? styles.activeTable : ''} ${isCreateNew ? styles.createNewTable : ''}`}
       style={{
         position: 'relative',
         cursor: isCollapsed ? 'pointer' : 'default',

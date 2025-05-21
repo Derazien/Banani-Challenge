@@ -13,7 +13,6 @@ import { DeleteHandler } from '@/lib/actions/handlers/delete-handler';
 import { ViewHandler } from '@/lib/actions/handlers/view-handler';
 import { EditHandler } from '@/lib/actions/handlers/edit-handler';
 import { AppHeader } from '@/components/ui/app-header';
-import { ErrorAlert } from '@/components/ui/error-alert';
 import { Position } from '@/types/draggable';
 import { TableStorageManager } from '@/lib/storage/table-storage-manager';
 import { TableGrid } from '@/components/layout/table-grid';
@@ -38,7 +37,7 @@ const createNewTable: TableData = {
 
 export default function Home() {
   const [prompt, setPrompt] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [tableErrors, setTableErrors] = useState<Record<string, string>>({});
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [tableToDelete, setTableToDelete] = useState<string | null>(null);
   
@@ -90,7 +89,11 @@ export default function Home() {
     if (!activeTableId) return;
     
     setTableLoading(activeTableId);
-    setError(null);
+    setTableErrors(prev => {
+      const newErrors = {...prev};
+      delete newErrors[activeTableId];
+      return newErrors;
+    });
     
     try {
       const isEditMode = activeTableId !== CREATE_NEW_TABLE_ID;
@@ -99,7 +102,8 @@ export default function Home() {
         ...(isEditMode && tableData ? { existingTable: tableData } : {})
       };
       
-      const res = await fetch("/api/generate-table", {
+      // Using the backend API directly through the Vercel rewrites
+      const res = await fetch("/api/table/generate", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -152,7 +156,10 @@ export default function Home() {
       
       setStoredTables(storageManager.getTables());
     } catch (err: any) {
-      setError(err.message || "Unknown error");
+      setTableErrors(prev => ({
+        ...prev,
+        [activeTableId]: err.message || "Unknown error"
+      }));
       console.error("Error in table operation:", err);
     } finally {
       setTableLoading(null);
@@ -177,7 +184,7 @@ export default function Home() {
     }
   };
 
-  const handleDismissError = () => setError(null);
+  const handleDismissError = () => setTableErrors({});
   
   const handleTableDelete = (tableId: string) => {
     setTableToDelete(tableId);
@@ -293,24 +300,6 @@ export default function Home() {
           isEditMode={activeTableId !== null && activeTableId !== CREATE_NEW_TABLE_ID} 
         />
         
-        <AnimatePresence>
-          {error && (
-            <motion.div 
-              className="w-full mb-4"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.3 }}
-            >
-              <ErrorAlert 
-                message={error} 
-                title="Failed to generate table" 
-                onDismiss={handleDismissError}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
-        
         {expandedTables.length > 0 && (
           <TableGrid
             tables={expandedTables}
@@ -322,6 +311,12 @@ export default function Home() {
             activeTableId={activeTableId || undefined}
             actionContext={actionContext}
             loadingTableId={tableLoading}
+            tableErrors={tableErrors}
+            onErrorDismiss={(tableId) => setTableErrors(prev => {
+              const newErrors = {...prev};
+              delete newErrors[tableId];
+              return newErrors;
+            })}
           />
         )}
         
@@ -332,6 +327,7 @@ export default function Home() {
             onTableSelect={handleTableSelect}
             activeTableId={activeTableId || undefined}
             loadingTableId={tableLoading}
+            tableErrors={tableErrors}
           />
         )}
       </motion.div>

@@ -10,7 +10,7 @@ export function exportTableToXLSX(tableData: TableData, fileName?: string): void
     return;
   }
 
-  try {
+    try {
     // Create worksheet data
     const worksheetData = [
       // Header row with column labels
@@ -98,6 +98,7 @@ export function convertXLSXDataToTable(xlsxData: Uint8Array, title: string, key:
     
     // Create rows
     const rows = data.slice(1).map((row, rowIndex) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const rowData: any = {
         id: `row-${rowIndex}`
       };

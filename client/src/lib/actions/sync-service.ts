@@ -1,8 +1,7 @@
 import { ActionRegistry } from './registry';
 import { 
-  ActionHandlerConfigResponse,
-  ActionHandlerConfig,
-  ActionHandlerMetadata
+  ActionHandlerMetadata,
+  ActionHandlerConfig
 } from './types';
 import { createDynamicHandler } from './dynamic-handler';
 import { SafeHandler } from './handlers/safe-handler';
@@ -19,7 +18,7 @@ export class ActionSyncService {
   private registry: ActionRegistry;
   private syncInterval: NodeJS.Timeout | null = null;
   private syncIntervalMs: number = 5 * 60 * 1000; // 5 minutes by default
-  private apiUrl: string = '/api/action-handlers';
+  private apiUrl: string = '/api/table/action-handlers'; // Direct call to backend through proxy
   private logger: Console = console;
   
   private constructor() {
@@ -90,9 +89,9 @@ export class ActionSyncService {
   /**
    * Check if a specific handler type needs updating
    */
-  public async checkForUpdates(type: string): Promise<boolean> {
+  public async checkForUpdates(handlerType: string): Promise<boolean> {
     try {
-      const response = await fetch(`${this.apiUrl}/check-updates?type=${type}&frontendVersion=${FRONTEND_VERSION}`);
+      const response = await fetch(`${this.apiUrl}/check-updates?type=${handlerType}&frontendVersion=${FRONTEND_VERSION}`);
       
       if (!response.ok) {
         throw new Error(`API responded with status ${response.status}`);
@@ -101,7 +100,7 @@ export class ActionSyncService {
       const data = await response.json();
       return data.needsUpdate;
     } catch (error) {
-      this.logger.error(`Failed to check for updates for handler ${type}:`, error);
+      this.logger.error(`Failed to check for updates for handler ${handlerType}:`, error);
       return false;
     }
   }
@@ -123,7 +122,12 @@ export class ActionSyncService {
       this.logger.debug('Received handler configurations:', data);
       
       // Group handlers by type to get the latest version of each type
-      const handlersByType = new Map<string, any>();
+      const handlersByType = new Map<string, { 
+        type: string; 
+        version: string; 
+        config: Record<string, unknown>; 
+        code?: string 
+      }>();
       
       // Find the latest version of each handler type
       for (const handler of data) {
@@ -136,7 +140,7 @@ export class ActionSyncService {
       }
       
       // Process the latest version of each handler type
-      for (const [type, handler] of handlersByType.entries()) {
+      for (const [, handler] of handlersByType.entries()) {
         await this.processHandlerConfig(handler);
       }
       
@@ -152,10 +156,21 @@ export class ActionSyncService {
    * Process handler configurations from the backend
    */
   private async processHandlerConfig(
-    handlerData: any
+    handlerData: { 
+      type: string; 
+      version: string; 
+      config: Record<string, unknown>; 
+      code?: string 
+    }
   ): Promise<void> {
     try {
-      const { type, config: handlerConfig, code, version } = handlerData;
+      const { type, config: rawHandlerConfig, code, version } = handlerData;
+      
+      // Convert raw config to ActionHandlerConfig
+      const handlerConfig: ActionHandlerConfig = {
+        enabled: true,
+        ...(rawHandlerConfig as Record<string, unknown>)
+      };
       
       // Check if we should update this handler
       const currentHandler = this.registry.getHandler(type);

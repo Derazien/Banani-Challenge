@@ -5,14 +5,14 @@ import { TableData } from '@/types/table';
 export interface ActionResult {
   success: boolean;
   message?: string;
-  data?: any;
+  data?: Record<string, unknown>;
   error?: string;
 }
 
 // Define the action handler interface that all handlers must implement
 export interface ActionHandler {
   // Execute the action with the provided row data and optional context
-  execute: (rowData: any, context?: ActionContext) => Promise<ActionResult>;
+  execute: (rowData: Record<string, unknown>, context?: ActionContext) => Promise<ActionResult>;
   
   // Get handler metadata
   getMetadata: () => ActionHandlerMetadata;
@@ -28,9 +28,9 @@ export interface ActionContext {
   viewId?: string;
   tableTitle?: string;
   tableData?: TableData;
-  updateData?: (updatedItem: any) => void;
+  updateData?: (updatedItem: Record<string, unknown>) => void;
   removeItem?: (itemId: string) => void;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Define metadata for action handlers
@@ -47,7 +47,7 @@ export interface ActionHandlerMetadata {
 export interface ActionHandlerConfig {
   enabled: boolean;
   permissions?: string[];
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
   endpoints?: Record<string, string>;
   customCode?: string;
   metadata?: ActionHandlerMetadata;

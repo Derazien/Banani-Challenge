@@ -13,6 +13,7 @@ interface TableTabsProps {
   onTableSelect: (table: TableData) => void;
   activeTableId?: string;
   loadingTableId?: string | null;
+  tableErrors?: Record<string, string>;
 }
 
 export function TableTabs({ 
@@ -20,7 +21,8 @@ export function TableTabs({
   onTableExpand, 
   onTableSelect, 
   activeTableId,
-  loadingTableId = null
+  loadingTableId = null,
+  tableErrors = {}
 }: TableTabsProps) {
   const [positions, setPositions] = useState<{x: number, y: number}[]>([]);
   const [mounted, setMounted] = useState(false);
@@ -122,6 +124,7 @@ export function TableTabs({
       {orderedTables.map((table, index) => {
         // Determine if this tab is loading
         const isLoading = loadingTableId === table.key;
+        const hasError = tableErrors[table.key];
         
         return (
           <motion.div
@@ -130,7 +133,8 @@ export function TableTabs({
               `${styles.tab} 
                ${activeTableId === table.key ? styles.activeTab : ''} 
                ${table.key === 'create_new' ? styles.createNewTab : ''}
-               ${isLoading ? styles.loadingTab : ''}`
+               ${isLoading ? styles.loadingTab : ''}
+               ${hasError ? styles.errorTab : ''}`
             }
             style={{
               position: 'fixed',
@@ -154,11 +158,13 @@ export function TableTabs({
               <span className={styles.tabIcon}>
                 {isLoading 
                   ? <span className={styles.loadingSpinner} /> 
-                  : table.key === 'create_new'
-                    ? getIcon('analytics')
-                    : table.rows.length > 0
-                      ? getIcon(table.rows[0].icon)
-                      : getIcon('file')}
+                  : hasError
+                    ? getIcon('alert-circle')  
+                    : table.key === 'create_new'
+                      ? getIcon('analytics')
+                      : table.rows.length > 0
+                        ? getIcon(table.rows[0].icon)
+                        : getIcon('file')}
               </span>
               <span className={styles.tabTitle}>{table.title}</span>
             </div>

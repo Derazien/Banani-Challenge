@@ -39,8 +39,12 @@
   overflow: visible !important;
 }
 
+.gridLayout {
+  /* Ensure grid items have proper sizing */
+}
+
 /* Make grid items have proper sizing */
-:global(.react-grid-item) {
+.gridLayout :global(.react-grid-item) {
   transition: all 200ms ease;
   transition-property: left, top;
   height: auto !important;
@@ -56,7 +60,7 @@
 }
 
 /* Ensure items inside grid fill their allocated space */
-:global(.react-grid-item > *) {
+.gridLayout :global(.react-grid-item > *) {
   width: 100% !important;
   min-width: 0 !important;
   max-width: 100% !important;
@@ -67,7 +71,7 @@
   flex: 1 !important;
 }
 
-:global(.react-grid-item.react-grid-placeholder) {
+.gridLayout :global(.react-grid-item.react-grid-placeholder) {
   background: rgba(23, 132, 239, 0.2);
   border: 2px dashed rgba(23, 132, 239, 0.5);
   border-radius: 12px;
@@ -75,16 +79,16 @@
   z-index: 300;
 }
 
-:global(.react-grid-item.cssTransforms) {
+.gridLayout :global(.react-grid-item.cssTransforms) {
   transition-property: transform;
 }
 
-:global(.react-grid-item.resizing) {
+.gridLayout :global(.react-grid-item.resizing) {
   z-index: 1;
   will-change: width, height;
 }
 
-:global(.react-grid-item.react-draggable-dragging) {
+.gridLayout :global(.react-grid-item.react-draggable-dragging) {
   transition: none;
   z-index: 950;
   will-change: transform;
@@ -92,15 +96,15 @@
   cursor: grabbing !important;
 }
 
-:global(.react-grid-item.dropping) {
+.gridLayout :global(.react-grid-item.dropping) {
   visibility: hidden;
 }
 
-:global(.react-grid-item.dropping-over) {
+.gridLayout :global(.react-grid-item.dropping-over) {
   background-color: rgba(23, 132, 239, 0.15);
 }
 
-:global(.layout) {
+.gridLayout :global(.layout) {
   height: auto !important;
   overflow: visible !important;
   width: 100% !important;
@@ -110,7 +114,7 @@
   box-sizing: border-box !important;
 }
 
-:global(.react-grid-layout) {
+.gridLayout :global(.react-grid-layout) {
   height: auto !important;
   overflow: visible !important;
   display: flex !important;

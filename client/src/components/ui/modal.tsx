@@ -82,24 +82,26 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     >
       <div 
         ref={contentRef}
-        className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col"
+        className="rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-hidden flex flex-col"
         style={{ 
           maxWidth: '600px',
-          backgroundColor: 'white',
+          backgroundColor: '#1e293b', // Dark background
+          color: '#f9fafb', // Light text
           borderRadius: '0.5rem',
-          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)',
+          boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.3)',
           position: 'relative',
-          zIndex: 10000
+          zIndex: 10000,
+          border: '1px solid #334155'
         }}
       >
-        <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
-          <h2 id="modal-title" className="text-xl font-semibold text-gray-900 dark:text-white">
+        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <h2 id="modal-title" className="text-xl font-semibold text-white">
             {title}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-500 focus:outline-none"
+            className="text-gray-400 hover:text-gray-300 focus:outline-none"
             aria-label="Close"
           >
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

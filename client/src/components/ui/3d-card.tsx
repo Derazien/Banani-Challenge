@@ -10,7 +10,6 @@ interface ThreeDCardProps {
   containerClassName?: string;
   glareMaxOpacity?: number;
   rotationIntensity?: number;
-  childrenClassName?: string;
 }
 
 export const ThreeDCard = ({
@@ -19,7 +18,6 @@ export const ThreeDCard = ({
   containerClassName,
   glareMaxOpacity = 0.1,
   rotationIntensity = 10,
-  childrenClassName,
 }: ThreeDCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);

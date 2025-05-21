@@ -1,4 +1,7 @@
-import { useState, useEffect, RefObject, useRef } from 'react';
+import { useState, useEffect, RefObject, useRef, useLayoutEffect } from 'react';
+
+// Safe useLayoutEffect that falls back to useEffect during SSR
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 export interface Position {
   x: number;
@@ -64,24 +67,62 @@ export function useBoundedDrag(
     edgeMargin = 0
   } = options;
   
+  // State for position and constraints
   const [position, setPosition] = useState<Position>(initialPosition);
-  const [dragConstraints, setDragConstraints] = useState<DragConstraints | undefined>({
-    left: edgeMargin,
-    top: edgeMargin,
-    right: typeof window !== 'undefined' ? window.innerWidth - 300 - edgeMargin : 500,
-    bottom: typeof window !== 'undefined' ? window.innerHeight - 300 - edgeMargin : 500
-  });
+  const [dragConstraints, setDragConstraints] = useState<DragConstraints | undefined>(undefined);
 
-  // Use a ref to track the current position for the effect
+  // Use a ref to track the current position to avoid dependency cycles
   const positionRef = useRef(position);
-  // Update ref whenever position changes
-  useEffect(() => {
+  
+  // Update position ref when position changes
+  useIsomorphicLayoutEffect(() => {
     positionRef.current = position;
   }, [position]);
-
-  // Update constraints when needed
+  
+  // Calculate initial constraints on mount
+  useIsomorphicLayoutEffect(() => {
+    // Skip on server-side render
+    if (typeof window === 'undefined' || !elementRef.current) return;
+    
+    const el = elementRef.current;
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    
+    const elementWidth = isCollapsed ? 250 : el.getBoundingClientRect().width;
+    const elementHeight = el.getBoundingClientRect().height;
+    
+    // Calculate initial constraints
+    const initialConstraints = {
+      left: edgeMargin,
+      top: edgeMargin,
+      right: windowWidth - elementWidth - edgeMargin,
+      bottom: windowHeight - elementHeight - edgeMargin,
+    };
+    
+    setDragConstraints(initialConstraints);
+    
+    // Ensure initial position is within constraints
+    const boundedX = Math.min(
+      Math.max(initialConstraints.left, initialPosition.x),
+      initialConstraints.right
+    );
+    
+    const boundedY = Math.min(
+      Math.max(initialConstraints.top, initialPosition.y),
+      initialConstraints.bottom
+    );
+    
+    // Only update if the position needs to change
+    if (boundedX !== position.x || boundedY !== position.y) {
+      setPosition({ x: boundedX, y: boundedY });
+    }
+  // This effect runs once on mount and when these dependencies change
+  }, [elementRef.current, isCollapsed, edgeMargin, initialPosition.x, initialPosition.y]);
+  
+  // Update constraints on resize or when dependencies change
   useEffect(() => {
-    if (!elementRef.current) return;
+    // Skip on server-side
+    if (typeof window === 'undefined' || !elementRef.current) return;
     
     const updateConstraints = () => {
       if (!elementRef.current) return;
@@ -93,7 +134,7 @@ export function useBoundedDrag(
       const elementWidth = isCollapsed ? 250 : elementRef.current.getBoundingClientRect().width;
       const elementHeight = elementRef.current.getBoundingClientRect().height;
       
-      // Only update constraints if they've actually changed
+      // Calculate new constraints
       const newConstraints = {
         left: edgeMargin,
         top: edgeMargin,
@@ -101,32 +142,23 @@ export function useBoundedDrag(
         bottom: windowHeight - elementHeight - edgeMargin,
       };
       
-      // Check if constraints have changed before updating state
-      const constraintsChanged = !dragConstraints ||
-        dragConstraints.left !== newConstraints.left ||
-        dragConstraints.top !== newConstraints.top ||
-        dragConstraints.right !== newConstraints.right ||
-        dragConstraints.bottom !== newConstraints.bottom;
-        
-      if (constraintsChanged) {
-        setDragConstraints(newConstraints);
-      }
+      setDragConstraints(newConstraints);
       
-      // Access current position from ref to avoid dependency loop
+      // Access current position from ref to avoid dependency cycles
       const currentPos = positionRef.current;
       
-      // Also ensure position stays within constraints
+      // Ensure position stays within constraints
       const newX = Math.min(
-        Math.max(edgeMargin, currentPos.x),
-        windowWidth - elementWidth - edgeMargin
+        Math.max(newConstraints.left, currentPos.x),
+        newConstraints.right
       );
       
       const newY = Math.min(
-        Math.max(edgeMargin, currentPos.y),
-        windowHeight - elementHeight - edgeMargin
+        Math.max(newConstraints.top, currentPos.y),
+        newConstraints.bottom
       );
       
-      // Only update if needed to avoid loops - use strict equality checks
+      // Only update if needed to avoid loops
       if (newX !== currentPos.x || newY !== currentPos.y) {
         setPosition({ x: newX, y: newY });
       }
@@ -135,13 +167,14 @@ export function useBoundedDrag(
     // Update constraints immediately
     updateConstraints();
     
-    // And add resize listener
+    // Add resize listener
     window.addEventListener('resize', updateConstraints);
     
+    // Cleanup listener on unmount or when dependencies change
     return () => {
       window.removeEventListener('resize', updateConstraints);
     };
-  }, [elementRef, isCollapsed, edgeMargin, dragConstraints]);
+  }, [elementRef, isCollapsed, edgeMargin]);
   
   // Simple drag end handler with position update
   const handleDragEnd = (info: { point: Position }) => {

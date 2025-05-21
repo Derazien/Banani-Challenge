@@ -3,20 +3,20 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getIcon } from '@/components/icon-registry';
-import { TableData } from '@/types/table';
+import { TableData, TableAction, TableRow } from '@/types/table';
 import { AnimatedTableRow } from '@/components/ui/animated-table-row';
 import styles from './styles.module.css';
 
 interface TableContentProps {
   tableData: TableData;
-  animationParentRef: React.RefObject<HTMLTableSectionElement>;
-  handleAction: (actionType: string, row: any) => void;
+  animationParentRef: React.RefObject<HTMLTableSectionElement | null>;
+  handleAction: (actionType: string, row: TableRow) => void;
   mounted: boolean;
   actionMessages: Record<string, string>;
-  showTooltip: (e: React.MouseEvent<HTMLButtonElement>, action: any) => void;
+  showTooltip: (e: React.MouseEvent<HTMLButtonElement>, action: TableAction) => void;
   hideTooltip: () => void;
   actionLoading: Record<string, boolean>;
-  getActionIcon: (action: any, itemId: string) => React.ReactNode;
+  getActionIcon: (action: TableAction, itemId: string) => React.ReactNode;
 }
 
 /**

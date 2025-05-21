@@ -16,6 +16,8 @@ interface TableGridProps {
   activeTableId?: string;
   actionContext?: ActionContext;
   loadingTableId?: string | null;
+  tableErrors?: Record<string, string>;
+  onErrorDismiss?: (tableId: string) => void;
 }
 
 export function TableGrid({ 
@@ -27,7 +29,9 @@ export function TableGrid({
   onTableSelect,
   activeTableId,
   actionContext,
-  loadingTableId = null
+  loadingTableId = null,
+  tableErrors = {},
+  onErrorDismiss
 }: TableGridProps) {
   const [mounted, setMounted] = useState(false);
   
@@ -80,7 +84,7 @@ export function TableGrid({
   if (!mounted) return null;
   
   return (
-    <div className={`${styles.verticalTableGrid} ${orderedTables.length === 1 ? styles.singleTableLayout : ''}`}>
+    <div className={`${styles.verticalTableGrid} ${styles.gridLayout} ${orderedTables.length === 1 ? styles.singleTableLayout : ''}`}>
       {orderedTables.map((table, index) => (
         <div 
           key={`${table.key}-${table.rows.length}`} 
@@ -89,7 +93,7 @@ export function TableGrid({
           <Table 
             tableData={table}
             loading={loadingTableId === table.key}
-            error={null}
+            error={tableErrors[table.key] || null}
             title={table.title}
             actionContext={actionContext}
             onDataUpdate={onTableUpdate}
@@ -97,12 +101,12 @@ export function TableGrid({
             zIndex={activeTableId === table.key ? 900 : 800 - index}
             isInitiallyCollapsed={false}
             onCollapse={() => onTableCollapse(table.key)}
-            isGridItem={true}
             singleTableMode={orderedTables.length === 1}
             isActive={activeTableId === table.key}
             onDelete={() => onTableDelete(table.key)}
             onClick={() => onTableSelect(table)}
             isCreateNew={table.key === "create_new"}
+            onErrorDismiss={() => onErrorDismiss && onErrorDismiss(table.key)}
           />
         </div>
       ))}

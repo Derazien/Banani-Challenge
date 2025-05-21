@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 
 interface AppHeaderProps {
@@ -9,16 +9,9 @@ interface AppHeaderProps {
 }
 
 export function AppHeader({ 
-  title = "Banani Data Explorer", 
-  subtitle = "Ask questions about your data through natural language" 
+  title = "Banani Test Challenge", 
+  subtitle = "Create Tables with simple prompts" 
 }: AppHeaderProps) {
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => {
-    setMounted(true);
-    return () => setMounted(false);
-  }, []);
-
   return (
     <motion.header 
       className="w-full py-8 relative z-20"
