@@ -1,4 +1,4 @@
-import { useState, useEffect, RefObject } from 'react';
+import { useState, useEffect, RefObject, useRef } from 'react';
 
 export interface Position {
   x: number;
@@ -72,6 +72,13 @@ export function useBoundedDrag(
     bottom: typeof window !== 'undefined' ? window.innerHeight - 300 - edgeMargin : 500
   });
 
+  // Use a ref to track the current position for the effect
+  const positionRef = useRef(position);
+  // Update ref whenever position changes
+  useEffect(() => {
+    positionRef.current = position;
+  }, [position]);
+
   // Update constraints when needed
   useEffect(() => {
     if (!elementRef.current) return;
@@ -105,19 +112,22 @@ export function useBoundedDrag(
         setDragConstraints(newConstraints);
       }
       
+      // Access current position from ref to avoid dependency loop
+      const currentPos = positionRef.current;
+      
       // Also ensure position stays within constraints
       const newX = Math.min(
-        Math.max(edgeMargin, position.x),
+        Math.max(edgeMargin, currentPos.x),
         windowWidth - elementWidth - edgeMargin
       );
       
       const newY = Math.min(
-        Math.max(edgeMargin, position.y),
+        Math.max(edgeMargin, currentPos.y),
         windowHeight - elementHeight - edgeMargin
       );
       
       // Only update if needed to avoid loops - use strict equality checks
-      if (newX !== position.x || newY !== position.y) {
+      if (newX !== currentPos.x || newY !== currentPos.y) {
         setPosition({ x: newX, y: newY });
       }
     };
@@ -131,7 +141,7 @@ export function useBoundedDrag(
     return () => {
       window.removeEventListener('resize', updateConstraints);
     };
-  }, [elementRef, position, isCollapsed, edgeMargin, dragConstraints]);
+  }, [elementRef, isCollapsed, edgeMargin, dragConstraints]);
   
   // Simple drag end handler with position update
   const handleDragEnd = (info: { point: Position }) => {

@@ -1,0 +1,189 @@
+.editForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.editFieldLabel {
+  font-weight: 500;
+  color: #4b5563;
+  margin-bottom: 0.25rem;
+}
+
+.editField {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  transition: border-color 0.2s;
+}
+
+.editField:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.editCancelButton {
+  background-color: #f9fafb;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem 0.75rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.editCancelButton:hover {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+
+.editSubmitButton {
+  background-color: #3b82f6;
+  color: white;
+  padding: 0.5rem 0.75rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.2s;
+  border: none;
+}
+
+.editSubmitButton:hover:not(:disabled) {
+  background-color: #2563eb;
+}
+
+.editSubmitButton:disabled {
+  background-color: #93c5fd;
+  cursor: not-allowed;
+}
+
+/* Field groups styling */
+.fieldGroup {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.fieldGroupTitle {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+
+.fieldsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .fieldsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.errorText {
+  color: #dc2626;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.idBadge {
+  background-color: #f9fafb;
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+}
+
+.idLabel {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-right: 0.5rem;
+}
+
+.idValue {
+  font-family: monospace;
+  font-size: 0.875rem;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .editForm {
+    background-color: #1e293b;
+    color: #f9fafb;
+  }
+  
+  .editFieldLabel {
+    color: #e5e7eb;
+  }
+  
+  .editField {
+    background-color: #0f172a;
+    border-color: #334155;
+    color: #f3f4f6;
+  }
+  
+  .editField:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+  
+  .editActions {
+    border-top-color: #334155;
+  }
+  
+  .editCancelButton {
+    background-color: #1e293b;
+    color: #d1d5db;
+    border-color: #475569;
+  }
+  
+  .editCancelButton:hover {
+    background-color: #334155;
+    color: #f3f4f6;
+  }
+  
+  .fieldGroup {
+    border-color: #334155;
+  }
+  
+  .fieldGroupTitle {
+    color: #d1d5db;
+  }
+  
+  .idBadge {
+    background-color: #0f172a;
+  }
+  
+  .idLabel {
+    color: #d1d5db;
+  }
+  
+  .idValue {
+    color: #f3f4f6;
+  }
+} 

@@ -101,6 +101,7 @@
 
 .createNewTab .tabTitle {
   color: #1784EF; /* Blue text */
+  font-weight: 500; /* Revert font-weight */
 }
 
 .createNewTab .tabIcon {

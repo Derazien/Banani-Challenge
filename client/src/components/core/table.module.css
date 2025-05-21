@@ -106,11 +106,16 @@
   font-size: 12px;
   font-weight: 500;
   line-height: 20px;
-  color: #A6A6A6;
+  color: #374151; /* Dark Gray, leaning towards black for unselected */
   text-align: left;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: color 0.2s ease;
+}
+
+.activeTable .tableTitle {
+  color: #1784EF; /* Blue when active, or keep it dark if preferred */
 }
 
 .tableTitleContent {
@@ -403,7 +408,8 @@ tr:last-child .tableCell {
   border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
 }
 
-.tableExportButton {
+.tableExportButton,
+.tableDeleteButton {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -413,13 +419,34 @@ tr:last-child .tableCell {
   height: 32px;
   border-radius: 50%;
   cursor: pointer;
-  color: #555555;
+  color: #6B7280; /* Gray for unselected icons */
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .tableExportButton:hover {
   background-color: rgba(0, 0, 0, 0.05);
-  color: #1784EF;
+  color: #374151; /* Darker gray on hover */
+}
+
+.tableDeleteButton:hover {
+  background-color: rgba(239, 68, 68, 0.1); /* Light red background */
+  color: #EF4444; /* Red icon on hover */
+}
+
+.activeTable .tableExportButton,
+.activeTable .tableDeleteButton {
+  color: #1784EF; /* Blue for selected icons */
+}
+
+.activeTable .tableExportButton:hover,
+.activeTable .tableDeleteButton:hover {
+  background-color: rgba(23, 132, 239, 0.1); /* Light blue background for active and hovered */
+}
+
+/* Ensure delete button specific hover (red) overrides active blue hover if needed */
+.activeTable .tableDeleteButton:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
 }
 
 /* Add a class to handle table content overflow */
@@ -460,25 +487,6 @@ tr:last-child .tableCell {
   display: flex !important;
   flex-direction: column !important;
   min-width: 0 !important;
-}
-
-.tableDeleteButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  color: #555555;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
-
-.tableDeleteButton:hover {
-  background-color: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
 }
 
 .activeTable {

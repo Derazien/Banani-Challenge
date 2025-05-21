@@ -1,0 +1,310 @@
+.detailContainer {
+  position: relative;
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.shineEffect {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 0.75rem;
+}
+
+.shineGradient {
+  width: 200%;
+  height: 200%;
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  background: linear-gradient(to bottom right, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.05), transparent);
+  transform: rotate(-15deg);
+}
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  position: relative;
+}
+
+.iconContainer {
+  flex-shrink: 0;
+  width: 3rem;
+  height: 3rem;
+  background: linear-gradient(to bottom right, #ebf5ff, #e0e7ff);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: #4f46e5;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.detailTitle {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.detailId {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0.25rem 0 0;
+}
+
+.importantFieldsContainer {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: linear-gradient(to right, #f9fafb, white);
+  border-radius: 0.5rem;
+  border: 1px solid #f3f4f6;
+}
+
+.importantFieldsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.importantField {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.fieldIconContainer {
+  margin-right: 0.75rem;
+  margin-top: 0.25rem;
+  color: #4f46e5;
+  flex-shrink: 0;
+}
+
+.fieldIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.fieldLabel {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.fieldValue {
+  font-weight: 500;
+  color: #111827;
+}
+
+.fieldContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.detailFieldsContainer {
+  margin-top: 1.5rem;
+  border: 1px solid #f3f4f6;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.detailField {
+  padding: 1rem;
+  display: flex;
+  align-items: flex-start;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.15s;
+}
+
+.detailField:last-child {
+  border-bottom: none;
+}
+
+.detailField:hover {
+  background-color: #f9fafb;
+}
+
+/* Value type styling */
+.emptyValue {
+  font-style: italic;
+  color: #9ca3af;
+}
+
+.textValue {
+  word-break: break-word;
+}
+
+.dateValue {
+  color: #4f46e5;
+}
+
+.linkValue {
+  color: #2563eb;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.linkValue:hover {
+  text-decoration: underline;
+}
+
+.booleanTrue {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.booleanFalse {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+.percentValue {
+  font-weight: 500;
+  color: #7c3aed;
+}
+
+.currencyValue {
+  font-weight: 500;
+  color: #059669;
+}
+
+.numberValue {
+  font-weight: 500;
+  color: #2563eb;
+}
+
+.arrayContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.arrayItem {
+  padding-left: 0.5rem;
+  border-left: 2px solid #e5e7eb;
+}
+
+.codeBlock {
+  font-family: monospace;
+  font-size: 0.75rem;
+  background-color: #f9fafb;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  max-height: 10rem;
+  margin: 0.5rem 0;
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .detailContainer {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+  }
+  
+  .detailTitle {
+    color: #f9fafb;
+  }
+  
+  .detailId {
+    color: #94a3b8;
+  }
+  
+  .importantFieldsContainer {
+    background: linear-gradient(to right, #0f172a, #1e293b);
+    border-color: #334155;
+  }
+  
+  .fieldLabel {
+    color: #94a3b8;
+  }
+  
+  .fieldValue {
+    color: #f9fafb;
+  }
+  
+  .fieldIconContainer {
+    color: #818cf8;
+  }
+  
+  .detailFieldsContainer {
+    border-color: #334155;
+  }
+  
+  .detailField {
+    border-bottom-color: #334155;
+  }
+  
+  .detailField:hover {
+    background-color: #0f172a;
+  }
+  
+  .emptyValue {
+    color: #64748b;
+  }
+  
+  .dateValue {
+    color: #818cf8;
+  }
+  
+  .linkValue {
+    color: #93c5fd;
+  }
+  
+  .booleanTrue {
+    background-color: #064e3b;
+    color: #a7f3d0;
+  }
+  
+  .booleanFalse {
+    background-color: #7f1d1d;
+    color: #fecaca;
+  }
+  
+  .percentValue {
+    color: #a78bfa;
+  }
+  
+  .currencyValue {
+    color: #34d399;
+  }
+  
+  .numberValue {
+    color: #93c5fd;
+  }
+  
+  .arrayItem {
+    border-left-color: #334155;
+  }
+  
+  .codeBlock {
+    background-color: #0f172a;
+    color: #e2e8f0;
+  }
+  
+  .iconContainer {
+    background: linear-gradient(to bottom right, #1e3a8a, #4f46e5);
+    color: #a5b4fc;
+  }
+} 

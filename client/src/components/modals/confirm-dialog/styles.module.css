@@ -1,0 +1,176 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.dialog {
+  background-color: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 28rem;
+  width: 100%;
+  position: relative;
+  z-index: 10000;
+  padding: 1.25rem;
+}
+
+.dialogHeader {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.dialogIcon {
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
+
+.icon {
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.deleteIcon {
+  color: #ef4444;
+}
+
+.warningIcon {
+  color: #eab308;
+}
+
+.infoIcon {
+  color: #3b82f6;
+}
+
+.dialogContent {
+  flex: 1;
+}
+
+.dialogTitle {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #111827;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.dialogMessage {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.dialogActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.cancelButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.cancelButton:hover {
+  background-color: #f9fafb;
+}
+
+.confirmButton {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.deleteButton {
+  background-color: #dc2626;
+}
+
+.deleteButton:hover {
+  background-color: #b91c1c;
+}
+
+.warningButton {
+  background-color: #ca8a04;
+}
+
+.warningButton:hover {
+  background-color: #a16207;
+}
+
+.infoButton {
+  background-color: #2563eb;
+}
+
+.infoButton:hover {
+  background-color: #1d4ed8;
+}
+
+/* Dark Mode */
+@media (prefers-color-scheme: dark) {
+  .dialog {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+  }
+  
+  .dialogTitle {
+    color: #f9fafb;
+  }
+  
+  .dialogMessage {
+    color: #cbd5e1;
+  }
+  
+  .cancelButton {
+    color: #e5e7eb;
+    background-color: #1e293b;
+    border-color: #475569;
+  }
+  
+  .cancelButton:hover {
+    background-color: #334155;
+  }
+  
+  .deleteButton {
+    background-color: #b91c1c;
+  }
+  
+  .deleteButton:hover {
+    background-color: #991b1b;
+  }
+  
+  .warningButton {
+    background-color: #b45309;
+  }
+  
+  .warningButton:hover {
+    background-color: #92400e;
+  }
+  
+  .infoButton {
+    background-color: #1d4ed8;
+  }
+  
+  .infoButton:hover {
+    background-color: #1e40af;
+  }
+} 

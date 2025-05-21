@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useDragControls } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { getIcon } from '@/components/icon-registry';
 import styles from './table.module.css';
 import { TableData } from '@/types/table';
@@ -11,30 +11,25 @@ import { SaveHandler } from '@/lib/actions/handlers/save-handler';
 import { ExportHandler } from '@/lib/actions/handlers/export-handler';
 import { AnimatedTableRow } from '@/components/ui/animated-table-row';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { Expand, Minimize2, GripVertical, Download, Trash2 } from 'lucide-react';
-import { useBoundedDrag } from '@/lib/hooks/use-bounded-drag';
-import { Position, DraggableProps } from '@/types/draggable';
+import { Expand, Minimize2, Download, Trash } from 'lucide-react';
 import { TableStorageManager } from '@/lib/storage/table-storage-manager';
 import { exportTableToXLSX } from '@/lib/utils/xlsx-export';
-import { ExpandedTablesState } from '@/types/table-manager';
+import AtomicSpinner from 'atomic-spinner';
 
-interface TableProps extends DraggableProps {
+interface TableProps {
   tableData: TableData | null;
   loading: boolean;
   error: string | null;
   title?: React.ReactNode;
   actionContext?: ActionContext;
   onDataUpdate?: (newData: TableData) => void;
+  collapsible?: boolean;
+  zIndex?: number;
   isInitiallyCollapsed?: boolean;
   onExpand?: () => void;
   onCollapse?: () => void;
-  snapToGrid?: boolean;
-  gridPosition?: Position;
-  isGridItem?: boolean;
-  dragHandleClassName?: string;
   singleTableMode?: boolean;
   fixedWidth?: number;
-  onDragEnd?: (position: Position) => void;
   isActive?: boolean;
   onDelete?: () => void;
   isCreateNew?: boolean;
@@ -49,19 +44,12 @@ export function Table({
   actionContext,
   onDataUpdate,
   collapsible = true,
-  initialPosition,
   zIndex = 900,
-  onPositionChange,
   isInitiallyCollapsed = false,
   onExpand,
   onCollapse,
-  snapToGrid = false,
-  gridPosition,
-  isGridItem = false,
-  dragHandleClassName,
   singleTableMode,
   fixedWidth,
-  onDragEnd,
   isActive = false,
   onDelete,
   isCreateNew = false,
@@ -69,36 +57,20 @@ export function Table({
 }: TableProps) {
   // State initialization
   const [isCollapsed, setIsCollapsed] = useState(isInitiallyCollapsed);
-  const [position, setPosition] = useState<Position>(initialPosition || { x: 20, y: 20 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [isGridDragging, setIsGridDragging] = useState(false);
   const [savedItems, setSavedItems] = useState<Record<string, boolean>>({});
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [actionMessages, setActionMessages] = useState<Record<string, string>>({});
   const [activeTooltip, setActiveTooltip] = useState<{ id: string, text: string, x: number, y: number } | null>(null);
   const [mounted, setMounted] = useState(false);
   
-  // Refs and hooks
-  const tableRef = useRef<HTMLDivElement>(null);
-  const startPositionRef = useRef<Position | null>(null);
+  // Hooks
   const [animationParent] = useAutoAnimate();
   const actionRegistry = ActionRegistry.getInstance();
-  const dragControls = useDragControls();
   
   // Track mounting for client-side only effects
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Convert numeric positions to string px values for consistent server/client rendering
-  const getInitialPositionStyle = () => {
-    const x = initialPosition?.x || 20;
-    const y = initialPosition?.y || 120;
-    return {
-      left: isGridItem ? 'auto' : `${x}px`,
-      top: isGridItem ? 'auto' : `${y}px`,
-    };
-  };
   
   // Simple toggle function with callbacks
   const toggleCollapse = (e?: React.MouseEvent) => {
@@ -113,34 +85,6 @@ export function Table({
       onExpand();
     }
   };
-  
-  // Bound the drag to the window with minimal dependencies
-  const { position: dragPosition, setPosition: setDragPosition, dragConstraints, handleDragEnd } = useBoundedDrag(tableRef, {
-    initialPosition,
-    isCollapsed,
-    edgeMargin: 8
-  });
-  
-  // Update position when initialPosition changes
-  useEffect(() => {
-    if (initialPosition) {
-      setDragPosition(initialPosition);
-    }
-  }, [initialPosition, setDragPosition]);
-  
-  // Update position when grid position changes and we're using grid positioning
-  useEffect(() => {
-    if (snapToGrid && gridPosition && !isCollapsed) {
-      setDragPosition(gridPosition);
-    }
-  }, [gridPosition, snapToGrid, isCollapsed, setDragPosition]);
-
-  // Notify parent of position changes if callback provided
-  useEffect(() => {
-    if (onPositionChange) {
-      onPositionChange(dragPosition);
-    }
-  }, [dragPosition, onPositionChange]);
 
   // Title display handling
   const resolvedTitle = propsTitle || initialTableData?.title || 'Table';
@@ -385,20 +329,9 @@ export function Table({
     exit: { opacity: 0, scale: 0.5, transition: { duration: 0.1 } },
   };
 
-  function startDrag(event: React.PointerEvent) {
-    dragControls.start(event, { snapToCursor: false });
-  }
-
-  // Calculate table width based on grid mode
+  // Calculate table width based on single table mode
   const getTableWidth = () => {
     if (isCollapsed) return '200px';
-    
-    if (isGridItem) {
-      // Always 50% width as requested
-      return '100%';
-    }
-    
-    // Default for non-grid tables
     return singleTableMode && fixedWidth ? `${fixedWidth}px` : '50%';
   };
 
@@ -497,7 +430,6 @@ export function Table({
       exportTableToXLSX(initialTableData);
     } catch (error) {
       console.error('Error exporting table:', error);
-      // Could add error feedback here
     }
   };
 
@@ -509,7 +441,7 @@ export function Table({
     }
   };
 
-    // Only render once mounted to avoid SSR issues
+  // Only render once mounted to avoid SSR issues
   if (!mounted) {
     // For SSR, just return null to avoid hydration mismatch entirely
     // The client will render the component after hydration is complete
@@ -519,80 +451,21 @@ export function Table({
   // Client-side rendering with full interactivity
   return (
     <motion.div 
-      ref={tableRef}
-      dragListener={false}
-      dragControls={dragControls}
-      className={`${styles.tableWrapper} ${isCollapsed ? styles.collapsedTableWrapper : styles.expandedTableWrapper} ${isGridItem ? styles.gridTableWrapper : ''} ${isActive ? styles.activeTable : ''} ${isCreateNew ? styles.createNewTable : ''}`}
+      className={`${styles.tableWrapper} ${isCollapsed ? styles.collapsedTableWrapper : styles.expandedTableWrapper} ${isActive ? styles.activeTable : ''} ${isCreateNew ? styles.createNewTable : ''}`}
       style={{
-        position: isGridItem ? 'relative' : 'fixed',
-        left: isGridItem ? undefined : dragPosition.x,
-        top: isGridItem ? undefined : dragPosition.y,
-        cursor: isCollapsed ? 'pointer' : (snapToGrid && !isCollapsed && !isGridItem ? 'grab' : 'default'),
+        position: 'relative',
+        cursor: isCollapsed ? 'pointer' : 'default',
         zIndex,
-        width: isGridItem ? '100%' : getTableWidth(),
+        width: getTableWidth(),
         maxWidth: '100%',
         height: 'auto',
         boxSizing: 'border-box',
         overflow: 'hidden',
-        boxShadow: isGridItem ? '0 3px 10px rgba(0, 0, 0, 0.1)' : undefined,
         margin: '0 auto'
       }}
-      // Only enable drag when not in grid
-      drag={!isGridItem && (!isCollapsed || !snapToGrid || (snapToGrid && !isCollapsed))}
-      dragConstraints={dragConstraints}
-      dragMomentum={false}
       variants={tableVariants}
       animate={isCollapsed ? 'collapsed' : 'expanded'}
       initial={isInitiallyCollapsed ? 'collapsed' : 'expanded'}
-      onDragStart={(event, info) => {
-        if (isGridItem) return;
-        
-        setIsDragging(true);
-        if (snapToGrid && !isCollapsed) {
-          startPositionRef.current = { 
-            x: info.point.x, 
-            y: info.point.y 
-          };
-          setIsGridDragging(true);
-        }
-      }}
-      onDragEnd={(event, info) => {
-        if (isGridItem) return;
-        
-        if (snapToGrid && !isCollapsed && startPositionRef.current) {
-          if (onPositionChange) {
-            const dragDistance = Math.sqrt(
-              Math.pow(info.point.x - startPositionRef.current.x, 2) + 
-              Math.pow(info.point.y - startPositionRef.current.y, 2)
-            );
-            
-            if (dragDistance > 50) {
-              onPositionChange({
-                x: info.point.x,
-                y: info.point.y
-              });
-            }
-          }
-          
-          if (gridPosition) {
-            setDragPosition(gridPosition);
-          }
-        } else {
-          handleDragEnd(info);
-        }
-
-        // Call the onDragEnd prop if provided
-        if (onDragEnd) {
-          onDragEnd({
-            x: info.point.x,
-            y: info.point.y
-          });
-        }
-        
-        setIsDragging(false);
-        setIsGridDragging(false);
-        startPositionRef.current = null;
-      }}
       onClick={(e) => {
         if (isCollapsed) {
           toggleCollapse(e);
@@ -604,8 +477,6 @@ export function Table({
     >
       <div 
         className={`${styles.tableHeaderOverlay} ${propsLoading ? styles.loadingTableHeader : ''}`}
-        onPointerDown={!isGridItem && !isCollapsed ? startDrag : undefined} 
-        style={{ cursor: isCollapsed || isDragging || isGridItem ? 'default' : 'grab' }}
       >
         <motion.div 
           className={styles.tableTitle}
@@ -639,7 +510,7 @@ export function Table({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
-                    <span className={styles.tableActionIcon}>{getIcon('delete')}</span>
+                    <Trash size={16} />
                   </motion.button>
                 )}
               </>
@@ -700,16 +571,20 @@ export function Table({
 
 function TableLoadingContent() {
   return (
-    <div className={styles.tableLoadingContent}>
-      <motion.div
-        className={styles.loadingContainer}
-        initial={{ opacity: 0.5 }}
-        animate={{ opacity: 1 }}
-        transition={{ repeat: Infinity, repeatType: "reverse", duration: 0.8 }}
-      >
-        <div className={styles.loadingSpinner} />
-        <div className={styles.loadingText}>Generating table...</div>
-      </motion.div>
+    <div className={styles.tableLoadingContent} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '200px' }}>
+      <AtomicSpinner 
+        atomSize={220} 
+        electronPathCount={4}
+        electronsPerPath={6}
+        electronPathColor={'rgba(126, 148, 223, 0.4)'} 
+        electronColorPalette={['#7e94df', '#a3b3ed', '#c9d2f8']} 
+        nucleusParticleFillColor={'#5568b8'} 
+        nucleusParticleBorderColor={'#3e4e8c'} 
+        nucleusLayerCount={3}
+        nucleusParticlesPerLayer={4}
+        electronSpeed={0.3}
+        nucleusSpeed={0.5}
+      />
     </div>
   );
 }

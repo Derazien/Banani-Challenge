@@ -15,6 +15,8 @@ import { DeleteIcon } from "./icons/DeleteIcon";
 // Default fallback icon
 import { FileIcon } from "@radix-ui/react-icons";
 
+// const iconClass = "text-white"; // Removed for reversion
+
 const iconMap: Record<string, ReactNode> = {
   bookmark: <BookmarkIcon />,
   chat: <ChatBubbleIcon />,

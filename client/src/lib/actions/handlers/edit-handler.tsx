@@ -12,7 +12,7 @@ import dynamic from 'next/dynamic';
 import { createRoot } from 'react-dom/client';
 
 // Dynamic import to avoid SSR issues
-const EditForm = dynamic(() => import('../../../components/ui/edit-form').then(mod => mod.EditForm), {
+const EditForm = dynamic(() => import('../../../components/forms/edit-form').then(mod => mod.EditForm), {
   ssr: false
 });
 

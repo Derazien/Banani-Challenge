@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Button } from './button';
-import { Input } from './input';
-import { Label } from './label';
-import { Textarea } from './textarea';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { motion } from 'framer-motion';
 import { Check, AlertCircle, Save, X } from 'lucide-react';
-import styles from '../core/table.module.css';
+import styles from './styles.module.css';
 
 interface EditFormProps {
   item: Record<string, any>;
@@ -15,6 +15,11 @@ interface EditFormProps {
   onCancel: () => void;
 }
 
+/**
+ * @component
+ * @param {EditFormProps} props - Component properties
+ * Form component for editing items with dynamic field detection
+ */
 export function EditForm({ item, onSave, onCancel }: EditFormProps) {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -27,7 +32,12 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
     setIsDirty(false);
   }, [item]);
 
-  // Handle input changes
+  /**
+   * @function
+   * @param {React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>} e - Change event
+   * @returns {void}
+   * Handle input changes with appropriate type conversion
+   */
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -68,7 +78,11 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
     }
   };
 
-  // Basic validation
+  /**
+   * @function
+   * @returns {boolean} Whether the form is valid
+   * Validate form fields and set error messages
+   */
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
     
@@ -97,12 +111,22 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
     return Object.keys(newErrors).length === 0;
   };
   
-  // Email validation
+  /**
+   * @function
+   * @param {string} email - Email to validate
+   * @returns {boolean} Whether the email is valid
+   * Validate email format
+   */
   const validateEmail = (email: string): boolean => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
   
-  // URL validation
+  /**
+   * @function
+   * @param {string} url - URL to validate
+   * @returns {boolean} Whether the URL is valid
+   * Validate URL format
+   */
   const validateUrl = (url: string): boolean => {
     try {
       new URL(url);
@@ -112,7 +136,12 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
     }
   };
 
-  // Format field names to be more readable
+  /**
+   * @function
+   * @param {string} key - Field key
+   * @returns {string} Formatted field name
+   * Format field names to be more readable
+   */
   const formatFieldName = (key: string): string => {
     return key
       .replace(/([A-Z])/g, ' $1') // Add space before capital letters
@@ -120,7 +149,12 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
       .replace(/^./, str => str.toUpperCase()); // Capitalize first letter
   };
 
-  // Handle form submission
+  /**
+   * @function
+   * @param {React.FormEvent} e - Form submit event
+   * @returns {Promise<void>}
+   * Handle form submission with validation
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -145,7 +179,13 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
     }
   };
 
-  // Determine field type based on key and value
+  /**
+   * @function
+   * @param {string} key - Field key
+   * @param {any} value - Field value
+   * @returns {string} Appropriate input type
+   * Determine field type based on key and value
+   */
   const getFieldType = (key: string, value: any): string => {
     // Common field types based on field name
     if (key === 'email' || key.includes('email')) return 'email';
@@ -166,7 +206,11 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
     return 'text';
   };
 
-  // Group fields into categories for better organization
+  /**
+   * @function
+   * @returns {Object} Grouped form fields
+   * Group fields into categories for better organization
+   */
   const getFieldGroups = () => {
     // Fields that should appear at the top (important fields)
     const priorityFields = ['name', 'title', 'description', 'summary'];
@@ -219,12 +263,12 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
       {/* ID field (read-only) */}
       {formData.id && (
         <motion.div 
-          className="bg-gray-50 p-3 rounded-md flex items-center"
+          className={styles.idBadge}
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <span className="text-gray-500 text-sm font-medium mr-2">ID:</span>
-          <span className="font-mono text-sm">{formData.id}</span>
+          <span className={styles.idLabel}>ID:</span>
+          <span className={styles.idValue}>{formData.id}</span>
         </motion.div>
       )}
       
@@ -273,7 +317,7 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
                 />
               )}
               {errors[key] && (
-                <p className="text-xs text-red-600 mt-1 flex items-center">
+                <p className={styles.errorText}>
                   <AlertCircle size={12} className="mr-1" />
                   {errors[key]}
                 </p>
@@ -286,13 +330,13 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
       {/* Contact information fields */}
       {fieldGroups.contact.length > 0 && (
         <motion.div 
-          className="border border-gray-200 rounded-md p-4 space-y-4"
+          className={styles.fieldGroup}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.1 }}
         >
-          <h3 className="text-sm font-medium text-gray-500">Contact Information</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <h3 className={styles.fieldGroupTitle}>Contact Information</h3>
+          <div className={styles.fieldsGrid}>
             {fieldGroups.contact.map((key) => (
               <div key={key} className="space-y-2">
                 <Label htmlFor={key} className={styles.editFieldLabel}>{formatFieldName(key)}</Label>
@@ -306,7 +350,7 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
                   placeholder={`Enter ${formatFieldName(key).toLowerCase()}`}
                 />
                 {errors[key] && (
-                  <p className="text-xs text-red-600 mt-1">{errors[key]}</p>
+                  <p className={styles.errorText}>{errors[key]}</p>
                 )}
               </div>
             ))}
@@ -317,13 +361,13 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
       {/* Metadata fields */}
       {fieldGroups.meta.length > 0 && (
         <motion.div 
-          className="border border-gray-200 rounded-md p-4 space-y-4"
+          className={styles.fieldGroup}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.15 }}
         >
-          <h3 className="text-sm font-medium text-gray-500">Metadata</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <h3 className={styles.fieldGroupTitle}>Metadata</h3>
+          <div className={styles.fieldsGrid}>
             {fieldGroups.meta.map((key) => (
               <div key={key} className="space-y-2">
                 <Label htmlFor={key} className={styles.editFieldLabel}>{formatFieldName(key)}</Label>
@@ -336,7 +380,7 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
                   className={errors[key] ? 'border-red-300' : styles.editField}
                 />
                 {errors[key] && (
-                  <p className="text-xs text-red-600 mt-1">{errors[key]}</p>
+                  <p className={styles.errorText}>{errors[key]}</p>
                 )}
               </div>
             ))}
@@ -347,13 +391,13 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
       {/* Date and time fields */}
       {fieldGroups.dateTime.length > 0 && (
         <motion.div 
-          className="border border-gray-200 rounded-md p-4 space-y-4"
+          className={styles.fieldGroup}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2 }}
         >
-          <h3 className="text-sm font-medium text-gray-500">Dates & Times</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <h3 className={styles.fieldGroupTitle}>Dates & Times</h3>
+          <div className={styles.fieldsGrid}>
             {fieldGroups.dateTime.map((key) => (
               <div key={key} className="space-y-2">
                 <Label htmlFor={key} className={styles.editFieldLabel}>{formatFieldName(key)}</Label>
@@ -366,7 +410,7 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
                   className={errors[key] ? 'border-red-300' : styles.editField}
                 />
                 {errors[key] && (
-                  <p className="text-xs text-red-600 mt-1">{errors[key]}</p>
+                  <p className={styles.errorText}>{errors[key]}</p>
                 )}
               </div>
             ))}
@@ -382,8 +426,8 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.25 }}
         >
-          <h3 className="text-sm font-medium text-gray-500">Additional Information</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <h3 className={styles.fieldGroupTitle}>Additional Information</h3>
+          <div className={styles.fieldsGrid}>
             {fieldGroups.other.map((key) => (
               <div key={key} className="space-y-2">
                 <Label htmlFor={key} className={styles.editFieldLabel}>{formatFieldName(key)}</Label>
@@ -407,7 +451,7 @@ export function EditForm({ item, onSave, onCancel }: EditFormProps) {
                   />
                 )}
                 {errors[key] && (
-                  <p className="text-xs text-red-600 mt-1">{errors[key]}</p>
+                  <p className={styles.errorText}>{errors[key]}</p>
                 )}
               </div>
             ))}

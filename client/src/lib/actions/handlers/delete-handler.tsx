@@ -13,7 +13,7 @@ import { createRoot } from 'react-dom/client';
 
 // Dynamic import to avoid SSR issues
 const ConfirmDialog = dynamic(
-  () => import('../../../components/ui/confirm-dialog').then(mod => mod.ConfirmDialog),
+  () => import('../../../components/modals/confirm-dialog').then(mod => mod.ConfirmDialog),
   { ssr: false }
 );
 

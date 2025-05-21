@@ -70,7 +70,7 @@ export function convertTableToXLSXData(tableData: TableData): Uint8Array {
 /**
  * Convert XLSX binary data back to TableData
  */
-export function convertXLSXDataToTable(xlsxData: Uint8Array, title: string): TableData | null {
+export function convertXLSXDataToTable(xlsxData: Uint8Array, title: string, key: string): TableData | null {
   try {
     // Read the workbook
     const workbook = XLSX.read(xlsxData, { type: 'array' });
@@ -111,6 +111,7 @@ export function convertXLSXDataToTable(xlsxData: Uint8Array, title: string): Tab
     
     // Return TableData
     return {
+      key,
       title,
       columns,
       rows,

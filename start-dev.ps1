@@ -122,17 +122,17 @@ HANDLER_ENCRYPTION_KEY=development-secret-key-change-in-production
 }
 
 # Ensure data directory exists for SQLite database
-$dataDir = Join-Path $rootDir 'data'
-if (-not (Test-Path $dataDir)) {
-    Write-Host "Creating data directory for SQLite database..." -ForegroundColor Yellow
-    New-Item -ItemType Directory -Path $dataDir | Out-Null
-}
+# $dataDir = Join-Path $rootDir 'backend/data'
+# if (-not (Test-Path $dataDir)) {
+#     Write-Host "Creating data directory for SQLite database..." -ForegroundColor Yellow
+#     New-Item -ItemType Directory -Path $dataDir | Out-Null
+# }
 
-$sqliteDbPath = Join-Path $dataDir 'banani.sqlite'
-if (-not (Test-Path $sqliteDbPath)) {
-    Write-Host "Creating empty SQLite database file..." -ForegroundColor Yellow
-    New-Item -ItemType File -Path $sqliteDbPath | Out-Null
-}
+# $sqliteDbPath = Join-Path $dataDir 'banani.sqlite'
+# if (-not (Test-Path $sqliteDbPath)) {
+#     Write-Host "Creating empty SQLite database file..." -ForegroundColor Yellow
+#     New-Item -ItemType File -Path $sqliteDbPath | Out-Null
+# }
 
 # Build backend
 Set-Location (Join-Path $rootDir 'backend')

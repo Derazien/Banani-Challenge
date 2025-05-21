@@ -12,7 +12,7 @@ import dynamic from 'next/dynamic';
 import { createRoot } from 'react-dom/client';
 
 // Dynamic imports to avoid SSR issues
-const ItemDetailView = dynamic(() => import('../../../components/ui/item-detail-view').then(mod => mod.ItemDetailView), {
+const ItemDetailView = dynamic(() => import('../../../components/views/item-detail-view').then(mod => mod.ItemDetailView), {
   ssr: false
 });
 

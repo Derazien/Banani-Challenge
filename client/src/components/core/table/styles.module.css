@@ -1,0 +1,404 @@
+/* Table container */
+.tableWrapper {
+  position: relative;
+  border-radius: 0.75rem;
+  background-color: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: box-shadow 0.3s ease;
+}
+
+.tableWrapper:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.collapsedTableWrapper {
+  background-color: white;
+  box-shadow: 0 2px 5px -1px rgba(0, 0, 0, 0.1), 0 1px 3px -1px rgba(0, 0, 0, 0.05);
+}
+
+.expandedTableWrapper {
+  border: 1px solid #f3f4f6;
+}
+
+.activeTable {
+  border: 2px solid #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.createNewTable {
+  border: 1px dashed #d1d5db;
+  background-color: #f9fafb;
+}
+
+/* Table header */
+.tableHeaderOverlay {
+  padding: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  align-items: center;
+  background-color: #f9fafb;
+  border-radius: 0.75rem 0.75rem 0 0;
+}
+
+.loadingTableHeader {
+  background: linear-gradient(to right, #f3f4f6, #f9fafb, #f3f4f6);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.tableTitle {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tableTitleContent {
+  font-weight: 600;
+  font-size: 1.125rem;
+  color: #111827;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tableControls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.tableExportButton,
+.tableDeleteButton,
+.tableCollapseButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background-color: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s;
+}
+
+.tableExportButton:hover,
+.tableCollapseButton:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.tableDeleteButton:hover {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+/* Table content */
+.tableContainer {
+  padding: 0 1rem 1rem;
+}
+
+.tableContentScrollable {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+
+.table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.tableRow {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
+}
+
+.tableRow:hover {
+  background-color: #f9fafb;
+}
+
+.createNewTableRow {
+  opacity: 0.7;
+}
+
+.tableCell {
+  padding: 0.75rem 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 12rem;
+}
+
+.firstTableCell {
+  padding-left: 0.5rem;
+}
+
+.tableCellWithIcon {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tableIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  background: linear-gradient(to bottom right, #f3f4f6, #e5e7eb);
+  border-radius: 0.375rem;
+  color: #4b5563;
+}
+
+.tableCellContent {
+  font-weight: 500;
+}
+
+.tableCellActions {
+  text-align: right;
+  position: relative;
+}
+
+.tableActions {
+  display: flex;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.tableActionButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.25rem;
+  transition: all 0.2s;
+}
+
+.tableActionButton:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.tableActionButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #dbeafe;
+}
+
+.tableActionIcon {
+  opacity: 0.3;
+}
+
+.actionMessage {
+  position: absolute;
+  right: 0;
+  top: -1.5rem;
+  background-color: #4b5563;
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  z-index: 10;
+  white-space: nowrap;
+}
+
+/* Tooltip */
+.tooltip {
+  padding: 0.25rem 0.5rem;
+  background-color: #4b5563;
+  color: white;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  z-index: 9999;
+  white-space: nowrap;
+}
+
+/* Loading states */
+.miniLoadingSpinner {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid rgba(107, 114, 128, 0.1);
+  border-left-color: #6b7280;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loadingSpinner {
+  width: 3rem;
+  height: 3rem;
+  border: 3px solid rgba(107, 114, 128, 0.1);
+  border-left-color: #6b7280;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 12.5rem;
+}
+
+/* Error state */
+.errorContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 12.5rem;
+}
+
+.errorContent {
+  text-align: center;
+  background-color: #fee2e2;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  max-width: 28rem;
+  color: #b91c1c;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.errorIcon {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #ef4444;
+}
+
+.errorMessage {
+  margin: 0;
+}
+
+/* Collapsed state */
+.collapsedTableContent {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+/* Animation */
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Dark mode */
+@media (prefers-color-scheme: dark) {
+  .tableWrapper,
+  .collapsedTableWrapper {
+    background-color: #1e293b;
+    border-color: #334155;
+  }
+  
+  .expandedTableWrapper {
+    border-color: #334155;
+  }
+  
+  .activeTable {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+  
+  .createNewTable {
+    border-color: #475569;
+    background-color: #0f172a;
+  }
+  
+  .tableHeaderOverlay {
+    background-color: #0f172a;
+    border-bottom-color: #334155;
+  }
+  
+  .loadingTableHeader {
+    background: linear-gradient(to right, #1e293b, #0f172a, #1e293b);
+  }
+  
+  .tableTitleContent {
+    color: #f9fafb;
+  }
+  
+  .tableExportButton,
+  .tableDeleteButton,
+  .tableCollapseButton {
+    color: #9ca3af;
+  }
+  
+  .tableExportButton:hover,
+  .tableCollapseButton:hover {
+    background-color: #334155;
+    color: #e5e7eb;
+  }
+  
+  .tableDeleteButton:hover {
+    background-color: #7f1d1d;
+    color: #fecaca;
+  }
+  
+  .tableRow {
+    border-bottom-color: #334155;
+  }
+  
+  .tableRow:hover {
+    background-color: #1e293b;
+  }
+  
+  .tableIcon {
+    background: linear-gradient(to bottom right, #1e293b, #0f172a);
+    color: #9ca3af;
+  }
+  
+  .tableCellContent {
+    color: #e5e7eb;
+  }
+  
+  .tableActionButton {
+    color: #9ca3af;
+  }
+  
+  .tableActionButton:hover {
+    background-color: #334155;
+    color: #e5e7eb;
+  }
+  
+  .tableActionButton:focus {
+    box-shadow: 0 0 0 2px #1e40af;
+  }
+  
+  .actionMessage,
+  .tooltip {
+    background-color: #475569;
+    color: #f3f4f6;
+  }
+  
+  .errorContent {
+    background-color: #7f1d1d;
+    color: #fecaca;
+  }
+  
+  .errorIcon {
+    color: #f87171;
+  }
+} 
