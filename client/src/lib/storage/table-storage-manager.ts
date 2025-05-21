@@ -40,6 +40,7 @@ export class TableStorageManager {
 
     try {
       const tablesJson = this.storage.getItem(this.storageKey);
+      
       if (tablesJson) {
         this.tables = JSON.parse(tablesJson);
       } else {
@@ -48,7 +49,6 @@ export class TableStorageManager {
         this.saveToStorage();
       }
     } catch (error) {
-      console.error('Error loading tables from storage:', error);
       this.tables = [];
       this.saveToStorage();
     }
@@ -61,9 +61,10 @@ export class TableStorageManager {
     if (!this.storage) return;
     
     try {
-      this.storage.setItem(this.storageKey, JSON.stringify(this.tables));
+      const serializedData = JSON.stringify(this.tables);
+      this.storage.setItem(this.storageKey, serializedData);
     } catch (error) {
-      console.error('Error saving tables to storage:', error);
+      console.error('Error saving tables to local storage:', error);
     }
   }
 
@@ -75,19 +76,29 @@ export class TableStorageManager {
   }
 
   /**
+   * Synchronize UI with current state in storage
+   * This method is used to ensure the UI reflects the latest storage state
+   * when direct storage operations happen outside the normal data flow
+   */
+  public synchronizeUI(): void {
+    this.loadTablesFromStorage();
+    
+    this.notifyListeners();
+  }
+
+  /**
    * Add or update a table
    */
   public saveTable(table: TableData): void {
-    if (!table || !table.key) return;
-
-    const existingIndex = this.tables.findIndex(t => t.key === table.key);
+    // First check if the table already exists
+    const existingTableIndex = this.tables.findIndex(t => t.key === table.key);
     
-    if (existingIndex >= 0) {
+    if (existingTableIndex >= 0) {
       // Update existing table
-      this.tables[existingIndex] = table;
+      this.tables[existingTableIndex] = { ...table };
     } else {
       // Add new table
-      this.tables.push(table);
+      this.tables = [...this.tables, { ...table }];
     }
     
     this.saveToStorage();
@@ -154,6 +165,25 @@ export class TableStorageManager {
   private notifyListeners(): void {
     for (const listener of this.listeners) {
       listener([...this.tables]);
+    }
+  }
+
+  /**
+   * Debug helper to inspect localStorage directly
+   */
+  public inspectLocalStorage(): void {
+    if (!this.storage) {
+      return;
+    }
+    
+    try {
+      const rawData = this.storage.getItem(this.storageKey);
+      
+      if (rawData) {
+        const parsed = JSON.parse(rawData);
+      }
+    } catch (error) {
+      console.error('[TRACE] Error inspecting localStorage:', error);
     }
   }
 }

@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Table } from '@/components/core/table';
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { TableData } from '@/types/table';
 import { ActionRegistry } from '@/lib/actions/registry';
 import { SaveHandler } from '@/lib/actions/handlers/save-handler';
@@ -13,7 +12,6 @@ import { DeleteHandler } from '@/lib/actions/handlers/delete-handler';
 import { ViewHandler } from '@/lib/actions/handlers/view-handler';
 import { EditHandler } from '@/lib/actions/handlers/edit-handler';
 import { AppHeader } from '@/components/ui/app-header';
-import { Position } from '@/types/draggable';
 import { TableStorageManager } from '@/lib/storage/table-storage-manager';
 import { TableGrid } from '@/components/layout/table-grid';
 import { TableTabs } from '@/components/layout/table-tabs';
@@ -42,13 +40,12 @@ export default function Home() {
   const [tableToDelete, setTableToDelete] = useState<string | null>(null);
   
   const { 
-    tableData, 
+    activeTableData,
     storedTables, 
     activeTableId, 
     expandedTableIds,
     tableLoading,
-    setTableData,
-    setActiveTableId,
+    setActiveTableData,
     setExpandedTableIds,
     setTableLoading,
     setStoredTables,
@@ -99,7 +96,7 @@ export default function Home() {
       const isEditMode = activeTableId !== CREATE_NEW_TABLE_ID;
       const requestData = { 
         prompt: userPrompt,
-        ...(isEditMode && tableData ? { existingTable: tableData } : {})
+        ...(isEditMode && activeTableData ? { existingTable: activeTableData } : {})
       };
       
       // Using the backend API directly through the Vercel rewrites
@@ -130,8 +127,7 @@ export default function Home() {
       if (activeTableId === CREATE_NEW_TABLE_ID) {
         // Create new table flow
         storageManager.saveTable(data);
-        setTableData({...data});
-        setActiveTableId(data.key);
+        setActiveTableData(data);
         setExpandedTableIds((prev: string[]) => {
           const withoutCreateNew = prev.filter((id: string) => id !== CREATE_NEW_TABLE_ID);
           return [data.key, ...withoutCreateNew].slice(0, 2);
@@ -141,15 +137,14 @@ export default function Home() {
         if (activeTableId !== data.key) {
           // Key changed
           storageManager.removeTable(activeTableId);
-          setTableData({...data});
-          setActiveTableId(data.key);
+          setActiveTableData(data);
           setExpandedTableIds((prev: string[]) => 
             prev.map((id: string) => id === activeTableId ? data.key : id)
           );
           storageManager.saveTable(data);
         } else {
           // No key change
-          setTableData({...data});
+          setActiveTableData(data);
           storageManager.saveTable(data);
         }
       }
@@ -211,13 +206,9 @@ export default function Home() {
     if (wasActive || (wasExpanded && otherExpandedTables.length === 0)) {
       if (otherExpandedTables.length > 0) {
         const newActiveId = otherExpandedTables[0];
-        setActiveTableId(newActiveId);
-        
-        const table = storedTables.find(t => t.key === newActiveId);
-        if (table) setTableData(table);
+        setActiveTableData(storedTables.find(t => t.key === newActiveId) || null);
       } else {
-        setActiveTableId(CREATE_NEW_TABLE_ID);
-        setTableData(null);
+        setActiveTableData(null);
         
         if (!expandedTableIds.includes(CREATE_NEW_TABLE_ID)) {
           setExpandedTableIds(prev => [CREATE_NEW_TABLE_ID, ...prev.filter(id => id !== CREATE_NEW_TABLE_ID)]);
@@ -234,11 +225,96 @@ export default function Home() {
     setTableToDelete(null);
   };
 
+  // Create a more robust actionContext with full tables list
   const actionContext = {
     userId: 'user-123',
-    tableId: 'main-table',
+    tableId: activeTableId,
     viewId: 'main-view',
-    tableTitle: tableData?.key
+    tableTitle: activeTableData?.title,
+    allTables: storedTables,
+    updateData: (updatedData: any) => {
+      if (!activeTableData || !updatedData.id) return;
+      
+      // Verify we're updating the active table
+      if (activeTableId !== activeTableData.key) {
+        console.error('Table mismatch: trying to update inactive table');
+        return;
+      }
+      
+      const updatedRows = activeTableData.rows.map(row => 
+        row.id === updatedData.id ? {...row, ...updatedData} : row
+      );
+      
+      const updatedTable = {
+        ...activeTableData,
+        rows: updatedRows
+      };
+      
+      setActiveTableData(updatedTable);
+      
+      const storageManager = TableStorageManager.getInstance();
+      storageManager.saveTable(updatedTable);
+      storageManager.inspectLocalStorage();
+      
+      setStoredTables(storageManager.getTables());
+    },
+    removeItem: (itemId: string, tableId?: string) => {
+      // Use provided tableId if available, otherwise use active table
+      const targetTableId = tableId || activeTableId;
+      
+      if (!targetTableId) return;
+      
+      // Find the table to modify (either active table or specified table)
+      const tableToModify = targetTableId === activeTableId 
+        ? activeTableData 
+        : storedTables.find(table => table.key === targetTableId);
+      
+      if (!tableToModify) {
+        console.error(`Cannot find table with ID ${targetTableId}`);
+        return;
+      }
+      
+      if (!itemId) {
+        console.error('No item ID provided for removal');
+        return;
+      }
+      
+      // Double-check that the item exists in this table
+      const itemExists = tableToModify.rows.some(row => row.id === itemId);
+      
+      if (!itemExists) {
+        console.error(`Item with ID ${itemId} not found in table ${targetTableId}`);
+        return;
+      }
+      
+      // Create updated table with item removed
+      const filteredRows = tableToModify.rows.filter(row => row.id !== itemId);
+      
+      const updatedTable = {
+        ...tableToModify,
+        rows: filteredRows
+      };
+      
+      // Single source of truth - update storage first
+      const storageManager = TableStorageManager.getInstance();
+      
+      storageManager.saveTable(updatedTable);
+      
+      // Get the latest tables from storage
+      const updatedTables = storageManager.getTables();
+      
+      // Update React state with the data from storage
+      setStoredTables(updatedTables);
+      
+      // If this is the active table, update activeTableData
+      if (targetTableId === activeTableId) {
+        // Find the table in the updated tables array to ensure consistency
+        const updatedActiveTable = updatedTables.find(table => table.key === targetTableId);
+        if (updatedActiveTable) {
+          setActiveTableData(updatedActiveTable);
+        }
+      }
+    }
   };
 
   // Filter and prepare tables for display

@@ -54,20 +54,30 @@ export function useTableActions(
   const handleItemUpdate = (updatedItem: any) => {
     if (!initialTableData || !updatedItem || !updatedItem.id) return;
     
+    // Create new rows array with the updated item
+    const updatedRows = initialTableData.rows.map(row => 
+      row.id === updatedItem.id ? {...row, ...updatedItem} : row
+    );
+    
+    // Create a new table data object
+    const updatedTableData = { 
+      ...initialTableData, 
+      rows: updatedRows 
+    };
+    
     if (onDataUpdate) {
-      // Create new rows array with the updated item
-      const updatedRows = initialTableData.rows.map(row => 
-        row.id === updatedItem.id ? {...row, ...updatedItem} : row
-      );
-      
-      // Create a new table data object
-      const updatedTableData = { 
-        ...initialTableData, 
-        rows: updatedRows 
-      };
-      
       // Notify parent
       onDataUpdate(updatedTableData);
+    } else {
+      // If no parent callback, update storage directly
+      try {
+        const { TableStorageManager } = require('@/lib/storage/table-storage-manager');
+        const storageManager = TableStorageManager.getInstance();
+        storageManager.saveTable(updatedTableData);
+        console.log('Table data updated directly in storage:', updatedTableData.key);
+      } catch (error) {
+        console.error('Failed to update table data in storage:', error);
+      }
     }
   };
   
@@ -77,20 +87,39 @@ export function useTableActions(
    * @returns {void}
    */
   const handleItemRemove = (itemId: string) => {
-    if (!initialTableData || !itemId) return;
+    if (!initialTableData || !itemId) {
+      return;
+    }
+    
+    // Double-check that the item exists in this table
+    const itemExists = initialTableData.rows.some(row => row.id === itemId);
+    if (!itemExists) {
+      console.error(`Item with ID ${itemId} not found in table ${initialTableData.key}`);
+      return;
+    }
+    
+    // Filter out the removed item
+    const filteredRows = initialTableData.rows.filter(row => row.id !== itemId);
+    
+    // Create a new table data object
+    const updatedTableData = { 
+      ...initialTableData, 
+      rows: filteredRows 
+    };
     
     if (onDataUpdate) {
-      // Filter out the removed item
-      const filteredRows = initialTableData.rows.filter(row => row.id !== itemId);
-      
-      // Create a new table data object
-      const updatedTableData = { 
-        ...initialTableData, 
-        rows: filteredRows 
-      };
-      
       // Notify parent
       onDataUpdate(updatedTableData);
+    } else {
+      // If no parent callback, update storage directly
+      try {
+        const { TableStorageManager } = require('@/lib/storage/table-storage-manager');
+        const storageManager = TableStorageManager.getInstance();
+        storageManager.saveTable(updatedTableData);
+        console.log('Item removed and table updated directly in storage:', updatedTableData.key);
+      } catch (error) {
+        console.error('Failed to remove item from table in storage:', error);
+      }
     }
   };
 
@@ -128,7 +157,18 @@ export function useTableActions(
         ...actionContext,
         // These functions let the handlers update/remove rows
         updateData: (updatedData: any) => handleItemUpdate(updatedData),
-        removeItem: (itemId: string) => handleItemRemove(itemId)
+        removeItem: (itemId: string, tableId?: string) => {
+          // Only use parent context's removeItem (from page.tsx)
+          // This eliminates dual responsibility and prevents double-saving
+          if (actionContext?.removeItem) {
+            // Use the item's tableKey if no tableId provided
+            const effectiveTableId = tableId || item.tableKey;
+            actionContext.removeItem(itemId, effectiveTableId);
+          } else {
+            // Fallback only if parent context doesn't have removeItem
+            handleItemRemove(itemId);
+          }
+        }
       };
       
       // Execute the handler
@@ -142,9 +182,20 @@ export function useTableActions(
             setSavedItems(prev => ({ ...prev, [item.id]: !prev[item.id] }));
             break;
             
+          case 'delete':
+            // For delete, we don't need to update anything
+            // The item has already been removed in the removeItem function
+            break;
+            
           default:
             // For other actions with data response
-            if (result.data) handleItemUpdate(result.data);
+            if (result.data) {
+              // Skip if the data only contains an id (which might be from a delete operation)
+              const hasOnlyId = Object.keys(result.data).length === 1 && 'id' in result.data;
+              if (!hasOnlyId) {
+                handleItemUpdate(result.data);
+              }
+            }
         }
         
         // Show success message if provided

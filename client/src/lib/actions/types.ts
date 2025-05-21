@@ -28,8 +28,9 @@ export interface ActionContext {
   viewId?: string;
   tableTitle?: string;
   tableData?: TableData;
+  allTables?: TableData[];
   updateData?: (updatedItem: Record<string, unknown>) => void;
-  removeItem?: (itemId: string) => void;
+  removeItem?: (itemId: string, tableId?: string) => void;
   [key: string]: unknown;
 }
 

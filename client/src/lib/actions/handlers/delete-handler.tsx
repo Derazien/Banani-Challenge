@@ -149,23 +149,23 @@ export class DeleteHandler implements ActionHandler {
     context?: ActionContext
   ): Promise<ActionResult> {
     try {
-      // Call the removeItem function from context if available
+      const itemTableId = rowData.tableKey || context.tableId;
       if (context?.removeItem) {
-        context.removeItem(id);
+        context.removeItem(id, itemTableId);
       } else {
-        console.warn('No removeItem function provided in context');
+        throw new Error('No removeItem function provided in context');
       }
       
       return {
         success: true,
         message: 'Item deleted successfully',
         data: {
-          id,
           timestamp: new Date().toISOString()
         }
       };
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to delete item:', errorMessage);
       throw new Error(`Failed to delete item: ${errorMessage}`);
     }
   }

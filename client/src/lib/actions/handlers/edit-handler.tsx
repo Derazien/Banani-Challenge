@@ -100,9 +100,108 @@ export class EditHandler implements ActionHandler {
         
         // Handle save action
         const handleSave = (updatedData: any) => {
+          // Ensure updatedData has required ID
+          if (!updatedData || !updatedData.id) {
+            console.error('Updated data is missing required ID field');
+            resolve({
+              success: false,
+              message: 'Failed to update: Missing ID field',
+              error: 'Missing ID field in updated data'
+            });
+            
+            // Cleanup
+            root.unmount();
+            cleanupContainer();
+            return;
+          }
+          
           // Call the updateData function from context if available
           if (context?.updateData) {
-            context.updateData(updatedData);
+            try {
+              context.updateData(updatedData);
+            } catch (error) {
+              console.error('Error while updating data through context:', error);
+              resolve({
+                success: false,
+                message: 'Failed to update data',
+                error: error instanceof Error ? error.message : 'Unknown error'
+              });
+              
+              // Cleanup
+              root.unmount();
+              cleanupContainer();
+              return;
+            }
+          } else {
+            console.warn('No updateData function provided in context. Attempting direct storage update...');
+            
+            // Try to update storage directly
+            try {
+              const { TableStorageManager } = require('../../../lib/storage/table-storage-manager');
+              const storageManager = TableStorageManager.getInstance();
+              
+              // Get table ID from different potential sources
+              const tableId = updatedData.tableKey || context?.tableId || context?.tableTitle;
+              
+              if (!tableId) {
+                throw new Error('Unable to determine table ID for update');
+              }
+              
+              // Get the current table
+              let currentTable = storageManager.getTableByKey(tableId);
+              
+              // Try alternative lookup methods if needed
+              if (!currentTable && typeof tableId === 'string') {
+                currentTable = storageManager.getTableByTitle(tableId);
+              }
+              
+              if (currentTable) {
+                // Verify item exists in table
+                const itemExists = currentTable.rows.some((row: Record<string, any>) => 
+                  row.id === updatedData.id
+                );
+                
+                if (!itemExists) {
+                  console.warn(`Item with ID ${updatedData.id} not found in table ${tableId}`);
+                }
+                
+                // Update the row in the table
+                const updatedRows = currentTable.rows.map((row: Record<string, any>) => 
+                  row.id === updatedData.id ? {...row, ...updatedData} : row
+                );
+                
+                // Create updated table
+                const updatedTable = {
+                  ...currentTable,
+                  rows: updatedRows
+                };
+                
+                // Save to storage
+                storageManager.saveTable(updatedTable);
+                
+                // Synchronize UI
+                storageManager.synchronizeUI();
+                
+                console.log('Item updated directly in storage');
+              } else {
+                throw new Error('Could not find the table to update');
+              }
+            } catch (error) {
+              console.error('Failed to update item directly in storage:', error);
+              
+              // Return a warning
+              resolve({
+                success: true,
+                message: 'Item updated in UI only. Unable to save to storage.',
+                data: updatedData,
+                warning: 'Storage update function not available'
+              });
+              
+              // Cleanup and return early
+              root.unmount();
+              cleanupContainer();
+              return;
+            }
           }
           
           resolve({

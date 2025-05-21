@@ -1,11 +1,7 @@
 .detailContainer {
   position: relative;
   background-color: #1e293b;
-  border-radius: 0.5rem;
-  border: 1px solid #334155;
   color: #f9fafb;
-  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
-  padding: 1.5rem;
   overflow: hidden;
 }
 
@@ -218,105 +214,3 @@
   max-height: 10rem;
   margin: 0.5rem 0;
 }
-
-/* Dark mode */
-@media (prefers-color-scheme: dark) {
-  .detailContainer {
-    background-color: #1e293b;
-    border: 1px solid #334155;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
-  }
-  
-  .shineGradient {
-    background: linear-gradient(to bottom right, rgba(99, 102, 241, 0.1), transparent);
-  }
-  
-  .detailHeader {
-    border-bottom-color: #334155;
-  }
-  
-  .detailTitle {
-    color: #f9fafb;
-  }
-  
-  .detailId {
-    color: #94a3b8;
-  }
-  
-  .importantFieldsContainer {
-    background: linear-gradient(to right, #0f172a, #1e293b);
-    border-color: #334155;
-  }
-  
-  .fieldLabel {
-    color: #cbd5e1;
-  }
-  
-  .fieldValue {
-    color: #f9fafb;
-  }
-  
-  .fieldIconContainer {
-    color: #818cf8;
-  }
-  
-  .detailFieldsContainer {
-    border-color: #334155;
-  }
-  
-  .detailField {
-    border-bottom-color: #334155;
-  }
-  
-  .detailField:hover {
-    background-color: #0f172a;
-  }
-  
-  .emptyValue {
-    color: #64748b;
-  }
-  
-  .dateValue {
-    color: #818cf8;
-  }
-  
-  .linkValue {
-    color: #93c5fd;
-  }
-  
-  .booleanTrue {
-    background-color: #064e3b;
-    color: #a7f3d0;
-  }
-  
-  .booleanFalse {
-    background-color: #7f1d1d;
-    color: #fecaca;
-  }
-  
-  .percentValue {
-    color: #a78bfa;
-  }
-  
-  .currencyValue {
-    color: #34d399;
-  }
-  
-  .numberValue {
-    color: #93c5fd;
-  }
-  
-  .arrayItem {
-    border-left-color: #334155;
-  }
-  
-  .codeBlock {
-    background-color: #0f172a;
-    color: #e2e8f0;
-  }
-  
-  .iconContainer {
-    background: linear-gradient(to bottom right, #1e3a8a, #4f46e5);
-    color: #a5b4fc;
-  }
-} 

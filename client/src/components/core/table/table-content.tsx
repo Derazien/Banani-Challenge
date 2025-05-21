@@ -61,7 +61,14 @@ export function TableContent({
                       aria-label={action.label}
                       onMouseEnter={(e) => showTooltip(e, action)}
                       onMouseLeave={hideTooltip}
-                      onClick={() => handleAction(action.type, row)}
+                      onClick={() => {
+                        // Ensure the row has table identification data
+                        const rowWithTableInfo = { 
+                          ...row, 
+                          tableKey: tableData.key
+                        };
+                        handleAction(action.type, rowWithTableInfo);
+                      }}
                       disabled={actionLoading[`${row.id}-${action.type}`]}
                       data-action-type={action.type}
                       whileHover={{ scale: 1.05 }}

@@ -7,9 +7,9 @@ import { CREATE_NEW_TABLE_ID, MAX_EXPANDED_TABLES } from '@/constants/table';
  * Hook for managing table state and operations
  */
 export function useTableManagement(createNewTable: TableData) {
-  const [tableData, setTableData] = useState<TableData | null>(null);
+  // Main state management
   const [storedTables, setStoredTables] = useState<TableData[]>([]);
-  const [activeTableId, setActiveTableId] = useState<string | null>(CREATE_NEW_TABLE_ID);
+  const [activeTableData, setActiveTableData] = useState<TableData | null>(null);
   const [expandedTableIds, setExpandedTableIds] = useState<string[]>([CREATE_NEW_TABLE_ID]);
   const [tableLoading, setTableLoading] = useState<string | null>(null);
 
@@ -21,39 +21,45 @@ export function useTableManagement(createNewTable: TableData) {
     
     const unsubscribe = storageManager.addListener((updatedTables) => {
       setStoredTables(updatedTables);
+      
+      // Update active table data if the active table was updated
+      if (activeTableData) {
+        const updatedActiveTable = updatedTables.find(table => table.key === activeTableData.key);
+        if (updatedActiveTable) {
+          setActiveTableData(updatedActiveTable);
+        }
+      }
     });
     
     return () => unsubscribe();
-  }, []);
+  }, [activeTableData]);
 
   // Ensure there's always at least one expanded table
   useEffect(() => {
     if (expandedTableIds.length === 0) {
       setExpandedTableIds([CREATE_NEW_TABLE_ID]);
-      setActiveTableId(CREATE_NEW_TABLE_ID);
-      setTableData(null);
+      setActiveTableData(null); // Create New table is represented by null
     }
   }, [expandedTableIds]);
 
   // Auto-expand the active table when it's set
   useEffect(() => {
-    if (tableData && tableData.key) {
-      if (!expandedTableIds.includes(tableData.key)) {
+    if (activeTableData && activeTableData.key) {
+      if (!expandedTableIds.includes(activeTableData.key)) {
         setExpandedTableIds(prevIds => {
-          if (prevIds.includes(tableData.key)) return prevIds;
-          return [...prevIds, tableData.key];
+          if (prevIds.includes(activeTableData.key)) return prevIds;
+          return [...prevIds, activeTableData.key];
         });
       }
     }
-  }, [tableData, expandedTableIds]);
+  }, [activeTableData, expandedTableIds]);
 
   // Clear all tables from storage
   const clearAllLocalStorage = useCallback(() => {
     const storageManager = TableStorageManager.getInstance();
     storageManager.clearAllTables();
     setStoredTables([]);
-    setTableData(null);
-    setActiveTableId(CREATE_NEW_TABLE_ID);
+    setActiveTableData(null);
     setExpandedTableIds([CREATE_NEW_TABLE_ID]);
   }, []);
 
@@ -62,32 +68,34 @@ export function useTableManagement(createNewTable: TableData) {
     const storageManager = TableStorageManager.getInstance();
     storageManager.saveTable(updatedTable);
     
-    if (activeTableId === updatedTable.key) {
-      setTableData(updatedTable);
-    }
+    // Update in-memory tables
+    const updatedTables = storageManager.getTables();
+    setStoredTables(updatedTables);
     
-    setStoredTables(storageManager.getTables());
-  }, [activeTableId]);
+    // If this was the active table, update activeTableData
+    if (activeTableData && activeTableData.key === updatedTable.key) {
+      setActiveTableData(updatedTable);
+    }
+  }, [activeTableData]);
 
   // Handle table selection
   const handleTableSelect = useCallback((table: TableData) => {
-    setActiveTableId(table.key);
     if (table.key !== CREATE_NEW_TABLE_ID) {
-      setTableData(table);
+      setActiveTableData(table);
+    } else {
+      setActiveTableData(null);
     }
   }, []);
 
   // Handle table expansion
   const handleTableExpand = useCallback((tableId: string) => {
-    setActiveTableId(tableId);
-    
     if (tableId !== CREATE_NEW_TABLE_ID) {
       const table = storedTables.find(t => t.key === tableId);
       if (table) {
-        setTableData(table);
+        setActiveTableData(table);
       }
     } else {
-      setTableData(null);
+      setActiveTableData(null);
     }
     
     setExpandedTableIds(prev => {
@@ -113,7 +121,7 @@ export function useTableManagement(createNewTable: TableData) {
 
   // Handle table collapse
   const handleTableCollapse = useCallback((tableId: string) => {
-    const wasActive = activeTableId === tableId;
+    const wasActive = activeTableData && activeTableData.key === tableId;
     const remainingExpanded = expandedTableIds.filter(id => id !== tableId);
     
     setExpandedTableIds(prev => {
@@ -128,35 +136,33 @@ export function useTableManagement(createNewTable: TableData) {
         
         if (realTables.length > 0) {
           const newActiveId = realTables[0];
-          setActiveTableId(newActiveId);
-          
-          const table = storedTables.find(t => t.key === newActiveId);
-          if (table) setTableData(table);
+          const newActiveTable = storedTables.find(t => t.key === newActiveId);
+          if (newActiveTable) setActiveTableData(newActiveTable);
         } else {
-          setActiveTableId(CREATE_NEW_TABLE_ID);
-          setTableData(null);
+          setActiveTableData(null);
         }
       } else {
-        setActiveTableId(CREATE_NEW_TABLE_ID);
-        setTableData(null);
+        setActiveTableData(null);
         setExpandedTableIds([CREATE_NEW_TABLE_ID]);
       }
     }
-  }, [activeTableId, expandedTableIds, storedTables]);
+  }, [activeTableData, expandedTableIds, storedTables]);
 
   // Handle table order change
   const handleTableOrderChange = useCallback((newOrder: string[]) => {
     setExpandedTableIds(newOrder);
   }, []);
 
+  // Get the active table ID
+  const activeTableId = activeTableData ? activeTableData.key : CREATE_NEW_TABLE_ID;
+
   return {
-    tableData,
+    activeTableData,
     storedTables,
     activeTableId,
     expandedTableIds,
     tableLoading,
-    setTableData,
-    setActiveTableId,
+    setActiveTableData,
     setExpandedTableIds,
     setTableLoading,
     setStoredTables,
